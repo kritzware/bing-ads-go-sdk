@@ -15,16 +15,25 @@ func (s StringClient) SendRequest(_ interface{}, _, _ string) ([]byte, error) {
 
 func getTestClient() *CampaignService {
 	client := &BingClient{
-		CustomerAccountId: os.Getenv("BING_ACCOUNT_ID"),
-		customerId:        os.Getenv("BING_CUSTOMER_ID"),
-		username:          os.Getenv("BING_USERNAME"),
-		password:          os.Getenv("BING_PASSWORD"),
-		developerToken:    os.Getenv("BING_DEV_TOKEN"),
+		accountId:      os.Getenv("BING_ACCOUNT_ID"),
+		customerId:     os.Getenv("BING_CUSTOMER_ID"),
+		username:       os.Getenv("BING_USERNAME"),
+		password:       os.Getenv("BING_PASSWORD"),
+		developerToken: os.Getenv("BING_DEV_TOKEN"),
 	}
 
 	return &CampaignService{
 		endpoint: "https://campaign.api.sandbox.bingads.microsoft.com/Api/Advertiser/CampaignManagement/v11/CampaignManagementService.svc",
 		client:   client,
+	}
+}
+
+func TestSandboxGetCampaignError(t *testing.T) {
+	svc := getTestClient()
+	_, err := svc.GetCampaignsByAccountId("43534", Shopping)
+
+	if err == nil {
+		t.Error("expected invalid id error")
 	}
 }
 
