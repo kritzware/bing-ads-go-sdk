@@ -1,12 +1,13 @@
 package main
 
+/*
 import (
 	"encoding/xml"
 
 	"github.com/getsidecar/bing-ads-go-sdk/adgroup"
-	"github.com/zak10/bing-ads-go-sdk/base"
+	"github.com/getsidecar/bing-ads-go-sdk/base"
 )
-
+/
 type GetCampaignsByIdsRequest struct {
 	XMLName      xml.Name `xml:"ns1:GetCampaignsByAccountIdRequest"`
 	AccountId    string   `xml:"ns1:AccountId"`
@@ -23,3 +24,5 @@ func main() {
 	adgroupService := adgroup.NewAdgroupService(client)
 	adgroupService.GetAdGroupCriterionsByIdsRequest(AdgroupId, "ProductPartition")
 }
+*/
+func main() {}
