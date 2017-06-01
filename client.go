@@ -8,8 +8,12 @@ import (
 	"net/http"
 )
 
-func (b *BingClient) MakeRequest(body interface{}) RequestEnvelope {
-	return RequestEnvelope{
+type Client interface {
+	SendRequest(interface{}, string, string) ([]byte, error)
+}
+
+func (b *BingClient) SendRequest(body interface{}, endpoint string, soapAction string) (resp []byte, err error) {
+	envelope := RequestEnvelope{
 		EnvNS:  "http://schemas.xmlsoap.org/soap/envelope/",
 		BingNS: "https://bingads.microsoft.com/CampaignManagement/v11",
 		Header: RequestHeader{
@@ -23,16 +27,12 @@ func (b *BingClient) MakeRequest(body interface{}) RequestEnvelope {
 			Body: body,
 		},
 	}
-}
 
-func (b *BingClient) SendRequest(r RequestEnvelope, endpoint string, soapAction string) (resp []byte, err error) {
-	req, err := xml.Marshal(r)
+	req, err := xml.Marshal(envelope)
 
 	if err != nil {
 		return
 	}
-
-	fmt.Printf("\n\n\n%s\n\n\n\n", string(req))
 
 	httpRequest, err := http.NewRequest("POST", endpoint, bytes.NewBuffer(req))
 
@@ -63,7 +63,7 @@ func (b *BingClient) SendRequest(r RequestEnvelope, endpoint string, soapAction 
 		return
 	}
 
-	fmt.Println(string(res.Body.OperationResponse))
+	fmt.Println(string(raw))
 
 	return res.Body.OperationResponse, err
 }

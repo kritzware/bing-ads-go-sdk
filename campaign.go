@@ -2,16 +2,19 @@ package main
 
 import (
 	"encoding/xml"
-	"fmt"
 )
 
+type BiddingScheme struct {
+	Type string
+}
+
 type Campaign struct {
-	BiddingScheme string  `xml:"https://bingads.microsoft.com/CampaignManagement/v11 BiddingScheme"`
-	BudgetType    string  `xml:"https://bingads.microsoft.com/CampaignManagement/v11 BudgetType"`
-	DailyBudget   float64 `xml:"https://bingads.microsoft.com/CampaignManagement/v11 DailyBudget"`
-	Description   string  `xml:"https://bingads.microsoft.com/CampaignManagement/v11 Description"`
-	Id            int64   `xml:"https://bingads.microsoft.com/CampaignManagement/v11 Id"`
-	Name          string  `xml:"https://bingads.microsoft.com/CampaignManagement/v11 Name"`
+	BiddingScheme BiddingScheme `xml:"https://bingads.microsoft.com/CampaignManagement/v11 BiddingScheme"`
+	BudgetType    string        `xml:"https://bingads.microsoft.com/CampaignManagement/v11 BudgetType"`
+	DailyBudget   float64       `xml:"https://bingads.microsoft.com/CampaignManagement/v11 DailyBudget"`
+	Description   string        `xml:"https://bingads.microsoft.com/CampaignManagement/v11 Description"`
+	Id            int64         `xml:"https://bingads.microsoft.com/CampaignManagement/v11 Id"`
+	Name          string        `xml:"https://bingads.microsoft.com/CampaignManagement/v11 Name"`
 	//maybe parse into sql nullable int?
 	//NativeBidAdjustment int     `xml:"https://bingads.microsoft.com/CampaignManagement/v11 NativeBidAdjustment"`
 	Status   string `xml:"https://bingads.microsoft.com/CampaignManagement/v11 Status"`
@@ -31,7 +34,7 @@ type GetCampaignsByIdsResponse struct {
 
 type CampaignService struct {
 	endpoint string
-	client   *BingClient
+	client   Client
 }
 
 func NewCampaignService(client *BingClient) *CampaignService {
@@ -51,19 +54,17 @@ type GetCampaignsByAccountIdResponse struct {
 	Campaigns []Campaign `xml:"https://bingads.microsoft.com/CampaignManagement/v11 Campaigns>Campaign"`
 }
 
-func (c *CampaignService) GetCampaignsByAccountId(campaignType CampaignType) ([]Campaign, error) {
-	req := c.client.MakeRequest(GetCampaignsByAccountIdRequest{
+func (c *CampaignService) GetCampaignsByAccountId(account string, campaignType CampaignType) ([]Campaign, error) {
+	req := GetCampaignsByAccountIdRequest{
 		CampaignType: campaignType,
-		AccountId:    c.client.CustomerAccountId,
-	})
+		AccountId:    account,
+	}
 
 	resp, err := c.client.SendRequest(req, c.endpoint, "GetCampaignsByAccountId")
 
 	if err != nil {
 		return nil, err
 	}
-
-	fmt.Println(string(resp))
 
 	campaignResponse := GetCampaignsByAccountIdResponse{}
 
@@ -88,9 +89,9 @@ type GetAdGroupsByCampaignIdResponse struct {
 
 func (c *CampaignService) GetAdgroupsByCampaign(campaign int64) ([]AdGroup, error) {
 
-	req := c.client.MakeRequest(GetAdGroupsByCampaignIdRequest{
+	req := GetAdGroupsByCampaignIdRequest{
 		CampaignId: campaign,
-	})
+	}
 
 	resp, err := c.client.SendRequest(req, c.endpoint, "GetAdGroupsByCampaignId")
 
@@ -156,10 +157,10 @@ type Criterion struct {
 }
 
 func (c *CampaignService) GetAdGroupCriterionsByIds(adgroup int64) ([]AdGroupCriterion, error) {
-	req := c.client.MakeRequest(GetAdGroupCriterionsByIdsRequest{
+	req := GetAdGroupCriterionsByIdsRequest{
 		AdGroupId:     adgroup,
 		CriterionType: ProductPartition,
-	})
+	}
 	resp, err := c.client.SendRequest(req, c.endpoint, "GetAdGroupCriterionsByIds")
 
 	if err != nil {
