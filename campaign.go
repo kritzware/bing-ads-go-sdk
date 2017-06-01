@@ -1,7 +1,8 @@
-package main
+package bingads
 
 import (
 	"encoding/xml"
+	"fmt"
 )
 
 type BiddingScheme struct {
@@ -104,71 +105,15 @@ func (c *CampaignService) GetAdgroupsByCampaign(campaign int64) ([]AdGroup, erro
 	return ret.AdGroups, err
 }
 
-type CriterionType string
-
-const (
-	ProductPartition CriterionType = "ProductPartition"
-)
-
-type GetAdGroupCriterionsByIdsRequest struct {
-	XMLName       xml.Name      `xml:"ns1:GetAdGroupCriterionsByIdsRequest"`
-	AdGroupId     int64         `xml:"ns1:AdGroupId"`
-	CriterionType CriterionType `xml:"ns1:CriterionType"`
-}
-
-type GetAdGroupCriterionsByIdsResponse struct {
-	AdGroupCriterions []AdGroupCriterion `xml:"https://bingads.microsoft.com/CampaignManagement/v11 AdGroupCriterions>AdGroupCriterion"`
-}
-
-type AdGroupCriterionStatus string
-
-const (
-	Active  AdGroupCriterionStatus = "Active"
-	Paused                         = "Paused"
-	Deleted                        = "Deleted"
-)
-
-type AdGroupCriterion struct {
-	Id        int64
-	AdGroupId int64
-	Criterion Criterion
-	Status    AdGroupCriterionStatus
-	Type      string
-}
-
-type ProductPartitionType string
-
-const (
-	Subdivision ProductPartitionType = "Subdivision"
-	Unit        ProductPartitionType = "Unit"
-)
-
-type ProductCondition struct {
-	Attribute string
-	Operand   string
-}
-
-type Criterion struct {
-	Type      string
-	Condition ProductCondition
-	//should be nullable int64
-	ParentCriterionId string
-	PartitionType     ProductPartitionType
-}
-
-func (c *CampaignService) GetAdGroupCriterionsByIds(adgroup int64) ([]AdGroupCriterion, error) {
-	req := GetAdGroupCriterionsByIdsRequest{
-		AdGroupId:     adgroup,
-		CriterionType: ProductPartition,
-	}
-	resp, err := c.client.SendRequest(req, c.endpoint, "GetAdGroupCriterionsByIds")
-
-	if err != nil {
-		return nil, err
+func findAttr(xs []xml.Attr, name string) (string, error) {
+	fmt.Println(xs)
+	for _, x := range xs {
+		fmt.Println(x.Name.Local)
+		if x.Name.Local == name {
+			return x.Value, nil
+		}
 	}
 
-	ret := GetAdGroupCriterionsByIdsResponse{}
-	err = xml.Unmarshal(resp, &ret)
-	return ret.AdGroupCriterions, err
+	return "", fmt.Errorf("attribute %s not found", name)
 
 }

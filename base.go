@@ -1,4 +1,4 @@
-package main
+package bingads
 
 import (
 	"encoding/xml"
