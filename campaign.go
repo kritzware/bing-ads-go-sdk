@@ -2,25 +2,51 @@ package bingads
 
 import (
 	"encoding/xml"
-	"fmt"
 )
 
 type BiddingScheme struct {
-	Type string
+	Type     string
+	TypeAttr string `xml:"i:type,attr"`
 }
+
+var ManualCpc = BiddingScheme{Type: "ManualCpc", TypeAttr: "ManualCpcBiddingScheme"}
 
 type Campaign struct {
 	BiddingScheme BiddingScheme `xml:"https://bingads.microsoft.com/CampaignManagement/v11 BiddingScheme"`
-	BudgetType    string        `xml:"https://bingads.microsoft.com/CampaignManagement/v11 BudgetType"`
+	BudgetType    BudgetType    `xml:"https://bingads.microsoft.com/CampaignManagement/v11 BudgetType"`
+	BudgetId      string        `xml:",omitempty"`
 	DailyBudget   float64       `xml:"https://bingads.microsoft.com/CampaignManagement/v11 DailyBudget"`
 	Description   string        `xml:"https://bingads.microsoft.com/CampaignManagement/v11 Description"`
-	Id            int64         `xml:"https://bingads.microsoft.com/CampaignManagement/v11 Id"`
+	Id            int64         `xml:"https://bingads.microsoft.com/CampaignManagement/v11 Id,omitempty"`
 	Name          string        `xml:"https://bingads.microsoft.com/CampaignManagement/v11 Name"`
 	//maybe parse into sql nullable int?
 	//NativeBidAdjustment int     `xml:"https://bingads.microsoft.com/CampaignManagement/v11 NativeBidAdjustment"`
-	Status   string `xml:"https://bingads.microsoft.com/CampaignManagement/v11 Status"`
-	TimeZone string `xml:"https://bingads.microsoft.com/CampaignManagement/v11 TimeZone"`
+	Status       string             `xml:"https://bingads.microsoft.com/CampaignManagement/v11 Status"`
+	TimeZone     string             `xml:"https://bingads.microsoft.com/CampaignManagement/v11 TimeZone"`
+	CampaignType CampaignType       `xml:"https://bingads.microsoft.com/CampaignManagement/v11 CampaignType"`
+	Settings     []CampaignSettings `xml:"https://bingads.microsoft.com/CampaignManagement/v11 Settings>Setting"`
 }
+
+//TODO: split into shoppingsetting + dynamicsearachadssetting
+type CampaignSettings struct {
+	Type     string
+	TypeAttr string `xml:"i:type,attr"`
+
+	LocalInventoryAdsEnabled string `xml:",omitempty"`
+	Priority                 int
+	SalesCountryCode         string
+	StoreId                  int64
+
+	DomainName string `xml:",omitempty"`
+	Language   string `xml:",omitempty"`
+}
+
+type BudgetType string
+
+const (
+	DailyBudgetAccelerated BudgetType = "DailyBudgetAccelerated"
+	DailyBudgetStandard               = "DailyBudgetStandard"
+)
 
 type CampaignType string
 
@@ -75,49 +101,31 @@ func (c *CampaignService) GetCampaignsByAccountId(account string, campaignType C
 	return campaignResponse.Campaigns, err
 }
 
-type AdGroup struct {
-	Id     int64  `xml:"https://bingads.microsoft.com/CampaignManagement/v11 Id"`
-	Name   string `xml:"https://bingads.microsoft.com/CampaignManagement/v11 Name"`
-	Status string `xml:"https://bingads.microsoft.com/CampaignManagement/v11 Status"`
-}
-
-type GetAdGroupsByCampaignIdRequest struct {
-	XMLName    xml.Name `xml:"GetAdGroupsByCampaignIdRequest"`
-	CampaignId int64    `xml:"CampaignId"`
-	NS         string   `xml:"xmlns,attr"`
-}
-
-type GetAdGroupsByCampaignIdResponse struct {
-	AdGroups []AdGroup `xml:"https://bingads.microsoft.com/CampaignManagement/v11 AdGroups>AdGroup"`
-}
-
-func (c *CampaignService) GetAdgroupsByCampaign(campaign int64) ([]AdGroup, error) {
-
-	req := GetAdGroupsByCampaignIdRequest{
-		NS:         "https://bingads.microsoft.com/CampaignManagement/v11",
-		CampaignId: campaign,
+func (c *CampaignService) AddCampaigns(account string, campaigns []Campaign) ([]int64, error) {
+	req := AddCampaignsRequest{
+		NS:        "https://bingads.microsoft.com/CampaignManagement/v11",
+		Campaigns: campaigns,
+		AccountId: account,
 	}
 
-	resp, err := c.client.SendRequest(req, c.endpoint, "GetAdGroupsByCampaignId")
+	resp, err := c.client.SendRequest(req, c.endpoint, "AddCampaigns")
 
 	if err != nil {
 		return nil, err
 	}
 
-	ret := GetAdGroupsByCampaignIdResponse{}
+	ret := AddCampaignsResponse{}
 	err = xml.Unmarshal(resp, &ret)
-	return ret.AdGroups, err
+	return ret.CampaignIds, err
 }
 
-func findAttr(xs []xml.Attr, name string) (string, error) {
-	fmt.Println(xs)
-	for _, x := range xs {
-		fmt.Println(x.Name.Local)
-		if x.Name.Local == name {
-			return x.Value, nil
-		}
-	}
-
-	return "", fmt.Errorf("attribute %s not found", name)
-
+type AddCampaignsRequest struct {
+	XMLName   xml.Name   `xml:"AddCampaignsRequest"`
+	NS        string     `xml:"xmlns,attr"`
+	AccountId string     `xml:"AccountId"`
+	Campaigns []Campaign `xml:"Campaigns>Campaign"`
+}
+type AddCampaignsResponse struct {
+	CampaignIds   []int64 `xml:"CampaignIds>long"`
+	PartialErrors []BatchError
 }

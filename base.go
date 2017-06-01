@@ -50,21 +50,21 @@ type RequestHeader struct {
 }
 
 type BingClient struct {
-	accountId      string
-	customerId     string
-	developerToken string
-	authToken      string
-	username       string
-	password       string
+	AccountId      string
+	CustomerId     string
+	DeveloperToken string
+	AuthToken      string
+	Username       string
+	Password       string
 }
 
 func NewBingClient(customerAccountId string, customerId string, developerToken string, authToken string, username string, password string) *BingClient {
 	return &BingClient{
-		accountId:      customerAccountId,
-		customerId:     customerId,
-		developerToken: developerToken,
-		authToken:      authToken,
-		username:       username,
-		password:       password,
+		AccountId:      customerAccountId,
+		CustomerId:     customerId,
+		DeveloperToken: developerToken,
+		AuthToken:      authToken,
+		Username:       username,
+		Password:       password,
 	}
 }

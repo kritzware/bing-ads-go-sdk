@@ -10,18 +10,22 @@ type ProductCondition struct {
 	Operand   string
 }
 
+//TODO: derived types
+//https://msdn.microsoft.com/en-us/library/bing-ads-campaign-management-getcampaigncriterionsbyids.aspx
 type Criterion struct {
-	Type      string
-	Condition ProductCondition
+	Type       string
+	TypeAttr   string             `xml:"i:type,attr"`
+	Conditions []ProductCondition `xml:"Conditions>ProductCondition"`
 	//should be nullable int64
-	ParentCriterionId string
-	PartitionType     ProductPartitionType
+	ParentCriterionId string               `xml:",omitempty"`
+	PartitionType     ProductPartitionType `xml:",omitempty"`
 }
 
 type CriterionType string
 
 const (
 	ProductPartition CriterionType = "ProductPartition"
+	ProductScope                   = "ProductScope"
 )
 
 type GetAdGroupCriterionsByIdsRequest struct {
@@ -36,25 +40,11 @@ type GetAdGroupCriterionsByIdsResponse struct {
 	AdGroupCriterions []BiddableAdGroupCriterion `xml:"https://bingads.microsoft.com/CampaignManagement/v11 AdGroupCriterions>AdGroupCriterion"`
 }
 
-type AdGroupCriterionStatus string
-
-const (
-	Active  AdGroupCriterionStatus = "Active"
-	Paused                         = "Paused"
-	Deleted                        = "Deleted"
-)
-
-//either fixed or multiplier
-type CriterionBid struct {
-	Type   string
-	Amount float64
-}
-
 type AdGroupCriterion struct {
 	Id           int64
 	AdGroupId    int64
 	Criterion    Criterion
-	Status       AdGroupCriterionStatus
+	Status       CriterionStatus
 	Type         string
 	CriterionBid CriterionBid
 }
@@ -62,7 +52,7 @@ type BiddableAdGroupCriterion struct {
 	Id           int64
 	AdGroupId    int64
 	Criterion    Criterion
-	Status       AdGroupCriterionStatus
+	Status       CriterionStatus
 	Type         string
 	CriterionBid CriterionBid
 }
@@ -71,7 +61,7 @@ type NegativeAdGroupCriterion struct {
 	Id        int64
 	AdGroupId int64
 	Criterion Criterion
-	Status    AdGroupCriterionStatus
+	Status    CriterionStatus
 	Type      string
 }
 

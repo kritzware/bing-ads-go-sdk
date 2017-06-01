@@ -110,12 +110,12 @@ func (b *BingClient) SendRequest(body interface{}, endpoint string, soapAction s
 		Header: RequestHeader{
 			BingNS:              "https://bingads.microsoft.com/CampaignManagement/v11",
 			Action:              soapAction,
-			CustomerAccountId:   b.accountId,
-			CustomerId:          b.customerId,
-			AuthenticationToken: b.authToken,
-			DeveloperToken:      b.developerToken,
-			Username:            b.username,
-			Password:            b.password,
+			CustomerAccountId:   b.AccountId,
+			CustomerId:          b.CustomerId,
+			AuthenticationToken: b.AuthToken,
+			DeveloperToken:      b.DeveloperToken,
+			Username:            b.Username,
+			Password:            b.Password,
 		},
 		Body: RequestBody{
 			Body: body,
@@ -179,11 +179,11 @@ func (b *BingClient) SendRequest(body interface{}, endpoint string, soapAction s
 
 func New(customerAccountId string, customerId string, developerToken string, authToken string, username string, password string) *BingClient {
 	return &BingClient{
-		accountId:      customerAccountId,
-		customerId:     customerId,
-		developerToken: developerToken,
-		authToken:      authToken,
-		username:       username,
-		password:       password,
+		AccountId:      customerAccountId,
+		CustomerId:     customerId,
+		DeveloperToken: developerToken,
+		AuthToken:      authToken,
+		Username:       username,
+		Password:       password,
 	}
 }

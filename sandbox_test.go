@@ -13,13 +13,40 @@ func (s StringClient) SendRequest(_ interface{}, _, _ string) ([]byte, error) {
 	return []byte(s), nil
 }
 
+func TestUnmarshalCampaignScope(t *testing.T) {
+	s := &CampaignService{
+		client: StringClient(`<GetCampaignCriterionsByIdsResponse xmlns="https://bingads.microsoft.com/CampaignManagement/v11"><CampaignCriterions xmlns:i="http://www.w3.org/2001/XMLSchema-instance"><CampaignCriterion i:type="BiddableCampaignCriterion"><CampaignId>283025743</CampaignId><Criterion i:type="ProductScope"><Type>ProductScope</Type><Conditions><ProductCondition><Attribute>top_brand</Attribute><Operand>CustomLabel0</Operand></ProductCondition></Conditions></Criterion><ForwardCompatibilityMap i:nil="true" xmlns:a="http://schemas.datacontract.org/2004/07/System.Collections.Generic"/><Id>840001008</Id><Status i:nil="true"/><Type>BiddableCampaignCriterion</Type><CriterionBid i:nil="true"/></CampaignCriterion></CampaignCriterions><PartialErrors i:nil="true" xmlns:i="http://www.w3.org/2001/XMLSchema-instance"/></GetCampaignCriterionsByIdsResponse>`),
+	}
+
+	res, err := s.GetCampaignCriterionsByIds(123)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	//	{283025743 {ProductScope [{top_brand CustomLabel0}]  } 840001008  BiddableCampaignCriterion}]
+	expected := []CampaignCriterion{{
+		CampaignId: 283025743,
+		Type:       "BiddableCampaignCriterion",
+		Id:         840001008,
+		Criterion: Criterion{
+			Type:       ProductScope,
+			Conditions: []ProductCondition{{"top_brand", "CustomLabel0"}},
+		},
+	}}
+
+	if !reflect.DeepEqual(res, expected) {
+		t.Errorf("expected %v, got %v", expected, res)
+	}
+}
+
 func getTestClient() *CampaignService {
 	client := &BingClient{
-		accountId:      os.Getenv("BING_ACCOUNT_ID"),
-		customerId:     os.Getenv("BING_CUSTOMER_ID"),
-		username:       os.Getenv("BING_USERNAME"),
-		password:       os.Getenv("BING_PASSWORD"),
-		developerToken: os.Getenv("BING_DEV_TOKEN"),
+		AccountId:      os.Getenv("BING_ACCOUNT_ID"),
+		CustomerId:     os.Getenv("BING_CUSTOMER_ID"),
+		Username:       os.Getenv("BING_USERNAME"),
+		Password:       os.Getenv("BING_PASSWORD"),
+		DeveloperToken: os.Getenv("BING_DEV_TOKEN"),
 	}
 
 	return &CampaignService{
@@ -28,7 +55,89 @@ func getTestClient() *CampaignService {
 	}
 }
 
-func TestGetSandboxCampaigns(t *testing.T) {
+func TestAddCampaignCriterions(t *testing.T) {
+	svc := getTestClient()
+
+	/*
+		camps, err := svc.GetCampaignsByAccountId(os.Getenv("BING_ACCOUNT_ID"), Shopping)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		fmt.Println(camps)
+
+		crits, err := svc.GetCampaignCriterionsByIds(804004280)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		fmt.Println(crits)
+	*/
+
+	cs := []CampaignCriterion{
+		{
+			Type:       "BiddableCampaignCriterion",
+			CampaignId: 804004280,
+			Nil:        "true",
+			Criterion: Criterion{
+				Type:     "ProductScope",
+				TypeAttr: "ProductScope",
+				Conditions: []ProductCondition{
+					{
+						Attribute: "top_brand",
+						Operand:   "CustomLabel0",
+					},
+				},
+			},
+		},
+	}
+
+	res, err := svc.AddCampaignCriterions(ProductScope, cs)
+
+	if err != nil {
+		t.Error(err)
+	}
+
+	fmt.Println(res)
+}
+
+func TestAddCampaigns(t *testing.T) {
+
+	svc := getTestClient()
+
+	toadd := []Campaign{{
+		BiddingScheme: ManualCpc,
+		BudgetType:    "DailyBudgetStandard",
+		DailyBudget:   25,
+		Description:   "a new campaign",
+		Name:          "newcapaign",
+		Status:        "Active",
+		TimeZone:      "EasternTimeUSCanada",
+		CampaignType:  Shopping,
+		Settings: []CampaignSettings{{
+			Type:             "ShoppingSetting",
+			TypeAttr:         "ShoppingSetting",
+			Priority:         0,
+			SalesCountryCode: "US",
+			StoreId:          1397151,
+		}},
+	}}
+
+	ids, err := svc.AddCampaigns(os.Getenv("BING_ACCOUNT_ID"), toadd)
+
+	if err != nil {
+		t.Error(err)
+	}
+
+	fmt.Println(ids)
+}
+
+//addcampaignerror
+//<AddCampaignsResponse xmlns="https://bingads.microsoft.com/CampaignManagement/v11"><CampaignIds xmlns:a="http://schemas.datacontract.org/2004/07/System" xmlns:i="http://www.w3.org/2001/XMLSchema-instance"><a:long i:nil="true"/></CampaignIds><PartialErrors xmlns:i="http://www.w3.org/2001/XMLSchema-instance"><BatchError><Code>1154</Code><Details i:nil="true"/><ErrorCode>CampaignServiceCampaignShoppingCampaignStoreIdInvalid</ErrorCode><FieldPath i:nil="true"/><ForwardCompatibilityMap i:nil="true" xmlns:a="http://schemas.datacontract.org/2004/07/System.Collections.Generic"/><Index>0</Index><Message>The store ID of the shopping campaign is invalid.</Message><Type>BatchError</Type></BatchError></PartialErrors></AddCampaignsResponse>
+
+func TestUnmarshalCampaigns(t *testing.T) {
 	client := StringClient(`<GetCampaignsByAccountIdResponse xmlns="https://bingads.microsoft.com/CampaignManagement/v11"><Campaigns xmlns:i="http://www.w3.org/2001/XMLSchema-instance"><Campaign><BiddingScheme i:type="ManualCpcBiddingScheme"><Type>ManualCpc</Type></BiddingScheme><BudgetType>DailyBudgetStandard</BudgetType><DailyBudget>25</DailyBudget><Description>dota2</Description><ForwardCompatibilityMap xmlns:a="http://schemas.datacontract.org/2004/07/System.Collections.Generic"/><Id>804002264</Id><Name>dota2</Name><NativeBidAdjustment i:nil="true"/><Status>Active</Status><TimeZone>EasternTimeUSCanada</TimeZone><TrackingUrlTemplate i:nil="true"/><UrlCustomParameters i:nil="true" xmlns:a="http://schemas.datacontract.org/2004/07/Microsoft.AdCenter.Advertiser.CampaignManagement.Api.DataContracts.V11"/><CampaignType>Shopping</CampaignType><Settings><Setting i:type="ShoppingSetting"><Type>ShoppingSetting</Type><LocalInventoryAdsEnabled i:nil="true"/><Priority>0</Priority><SalesCountryCode>US</SalesCountryCode><StoreId>1387210</StoreId></Setting></Settings><BudgetId i:nil="true"/><Languages i:nil="true" xmlns:a="http://schemas.microsoft.com/2003/10/Serialization/Arrays"/></Campaign></Campaigns></GetCampaignsByAccountIdResponse>`)
 
 	svc := &CampaignService{
@@ -43,7 +152,7 @@ func TestGetSandboxCampaigns(t *testing.T) {
 	}
 
 	expected := []Campaign{{
-		BiddingScheme: BiddingScheme{"ManualCpc"},
+		BiddingScheme: BiddingScheme{Type: "ManualCpc"},
 		BudgetType:    "DailyBudgetStandard",
 		DailyBudget:   25,
 		Description:   "dota2",
@@ -51,6 +160,13 @@ func TestGetSandboxCampaigns(t *testing.T) {
 		Name:          "dota2",
 		Status:        "Active",
 		TimeZone:      "EasternTimeUSCanada",
+		CampaignType:  Shopping,
+		Settings: []CampaignSettings{{
+			Type:             "ShoppingSetting",
+			Priority:         0,
+			SalesCountryCode: "US",
+			StoreId:          1387210,
+		}},
 	}}
 
 	if !reflect.DeepEqual(res, expected) {
@@ -58,7 +174,7 @@ func TestGetSandboxCampaigns(t *testing.T) {
 	}
 }
 
-func TestGetSandBoxAdGroups(t *testing.T) {
+func TestGetSandboxAdGroups(t *testing.T) {
 	client := getTestClient()
 	res, err := client.GetAdgroupsByCampaign(804002264)
 
@@ -80,7 +196,7 @@ func TestGetSandboxCriterion(t *testing.T) {
 	fmt.Println(res)
 }
 
-func TestSerial(t *testing.T) {
+func TestUnmarshalAdgroupCriterions(t *testing.T) {
 	/*
 		s := `
 		<AdGroupCriterion i:type="BiddableAdGroupCriterion">
