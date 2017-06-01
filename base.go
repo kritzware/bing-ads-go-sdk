@@ -10,9 +10,9 @@ var (
 )
 
 type RequestEnvelope struct {
-	XMLName xml.Name `xml:"SOAP-ENV:Envelope"`
-	EnvNS   string   `xml:"xmlns:SOAP-ENV,attr"`
-	BingNS  string   `xml:"xmlns:ns1,attr"`
+	XMLName xml.Name `xml:"s:Envelope"`
+	EnvNS   string   `xml:"xmlns:i,attr"`
+	EnvSS   string   `xml:"xmlns:s,attr"`
 	Header  RequestHeader
 	Body    RequestBody
 }
@@ -33,18 +33,20 @@ type TrackingId struct {
 }
 
 type RequestBody struct {
-	XMLName xml.Name `xml:"SOAP-ENV:Body"`
+	XMLName xml.Name `xml:"s:Body"`
 	Body    interface{}
 }
 
 type RequestHeader struct {
-	XMLName             xml.Name `xml:"SOAP-ENV:Header"`
-	CustomerAccountId   string   `xml:"ns1:CustomerAccountId"`
-	CustomerId          string   `xml:"ns1:CustomerId"`
-	DeveloperToken      string   `xml:"ns1:DeveloperToken"`
-	AuthenticationToken string   `xml:"ns1:AuthenticationToken"`
-	Username            string   `xml:"ns1:UserName"`
-	Password            string   `xml:"ns1:Password"`
+	XMLName             xml.Name `xml:"s:Header"`
+	BingNS              string   `xml:"xmlns,attr"`
+	Action              string
+	AuthenticationToken string `xml:"AuthenticationToken,omitempty"`
+	CustomerAccountId   string `xml:"CustomerAccountId"`
+	CustomerId          string `xml:"CustomerId"`
+	DeveloperToken      string `xml:"DeveloperToken"`
+	Password            string `xml:"Password"`
+	Username            string `xml:"UserName"`
 }
 
 type BingClient struct {

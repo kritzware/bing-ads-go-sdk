@@ -40,15 +40,15 @@ type CampaignService struct {
 
 func NewCampaignService(client *BingClient) *CampaignService {
 	return &CampaignService{
-		endpoint: "https://campaign.api.bingads.microsoft.com/Api/Advertiser/CampaignManagement/V10/CampaignManagementService.svc?singleWsdl",
+		endpoint: "https://campaign.api.bingads.microsoft.com/Api/Advertiser/CampaignManagement/v11/CampaignManagementService.svc",
 		client:   client,
 	}
 }
 
 type GetCampaignsByAccountIdRequest struct {
-	XMLName      xml.Name     `xml:"ns1:GetCampaignsByAccountIdRequest"`
-	AccountId    string       `xml:"ns1:AccountId"`
-	CampaignType CampaignType `xml:"ns1:CampaignType"`
+	XMLName      xml.Name     `xml:"GetCampaignsByAccountIdRequest"`
+	AccountId    string       `xml:"AccountId"`
+	CampaignType CampaignType `xml:"CampaignType"`
 }
 
 type GetCampaignsByAccountIdResponse struct {
@@ -80,8 +80,8 @@ type AdGroup struct {
 }
 
 type GetAdGroupsByCampaignIdRequest struct {
-	XMLName    xml.Name `xml:"ns1:GetAdGroupsByCampaignIdRequest"`
-	CampaignId int64    `xml:"ns1:CampaignId"`
+	XMLName    xml.Name `xml:"GetAdGroupsByCampaignIdRequest"`
+	CampaignId int64    `xml:"CampaignId"`
 }
 
 type GetAdGroupsByCampaignIdResponse struct {

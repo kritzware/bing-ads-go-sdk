@@ -105,11 +105,13 @@ func (f *ErrorsType) Error() string {
 
 func (b *BingClient) SendRequest(body interface{}, endpoint string, soapAction string) ([]byte, error) {
 	envelope := RequestEnvelope{
-		EnvNS:  "http://schemas.xmlsoap.org/soap/envelope/",
-		BingNS: "https://bingads.microsoft.com/CampaignManagement/v11",
+		EnvNS: "http://www.w3.org/2001/XMLSchema-instance",
+		EnvSS: "http://schemas.xmlsoap.org/soap/envelope/",
 		Header: RequestHeader{
-			CustomerAccountId: b.accountId,
-			//CustomerId:          b.customerId,
+			BingNS:              "https://bingads.microsoft.com/CampaignManagement/v11",
+			Action:              soapAction,
+			CustomerAccountId:   b.accountId,
+			CustomerId:          b.customerId,
 			AuthenticationToken: b.authToken,
 			DeveloperToken:      b.developerToken,
 			Username:            b.username,
@@ -120,7 +122,7 @@ func (b *BingClient) SendRequest(body interface{}, endpoint string, soapAction s
 		},
 	}
 
-	req, err := xml.Marshal(envelope)
+	req, err := xml.MarshalIndent(envelope, "", "  ")
 
 	if err != nil {
 		return nil, err
@@ -148,7 +150,7 @@ func (b *BingClient) SendRequest(body interface{}, endpoint string, soapAction s
 		return nil, err
 	}
 
-	//fmt.Println(string(req))
+	fmt.Println(string(req))
 	//fmt.Println(string(raw))
 
 	res := SoapResponseEnvelope{}
