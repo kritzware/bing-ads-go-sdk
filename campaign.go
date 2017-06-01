@@ -47,6 +47,7 @@ func NewCampaignService(client *BingClient) *CampaignService {
 
 type GetCampaignsByAccountIdRequest struct {
 	XMLName      xml.Name     `xml:"GetCampaignsByAccountIdRequest"`
+	NS           string       `xml:"xmlns,attr"`
 	AccountId    string       `xml:"AccountId"`
 	CampaignType CampaignType `xml:"CampaignType"`
 }
@@ -57,6 +58,7 @@ type GetCampaignsByAccountIdResponse struct {
 
 func (c *CampaignService) GetCampaignsByAccountId(account string, campaignType CampaignType) ([]Campaign, error) {
 	req := GetCampaignsByAccountIdRequest{
+		NS:           "https://bingads.microsoft.com/CampaignManagement/v11",
 		CampaignType: campaignType,
 		AccountId:    account,
 	}
@@ -82,6 +84,7 @@ type AdGroup struct {
 type GetAdGroupsByCampaignIdRequest struct {
 	XMLName    xml.Name `xml:"GetAdGroupsByCampaignIdRequest"`
 	CampaignId int64    `xml:"CampaignId"`
+	NS         string   `xml:"xmlns,attr"`
 }
 
 type GetAdGroupsByCampaignIdResponse struct {
@@ -91,6 +94,7 @@ type GetAdGroupsByCampaignIdResponse struct {
 func (c *CampaignService) GetAdgroupsByCampaign(campaign int64) ([]AdGroup, error) {
 
 	req := GetAdGroupsByCampaignIdRequest{
+		NS:         "https://bingads.microsoft.com/CampaignManagement/v11",
 		CampaignId: campaign,
 	}
 
