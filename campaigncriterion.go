@@ -2,7 +2,6 @@ package bingads
 
 import (
 	"encoding/xml"
-	"fmt"
 )
 
 type NilId struct {

@@ -55,6 +55,29 @@ func getTestClient() *CampaignService {
 	}
 }
 
+func TestAddAdGroupSandbox(t *testing.T) {
+
+	svc := getTestClient()
+
+	toadd := []AdGroup{
+		{
+			Name:           "new adgroup1",
+			Language:       "English",
+			Network:        "OwnedAndOperatedOnly",
+			AdDistribution: "Search",
+			BiddingScheme:  &BiddingScheme{"ManualCpcBiddingScheme", "ManualCpcBiddingScheme"},
+		},
+	}
+
+	res, err := svc.AddAdGroups(804004280, toadd)
+
+	if err != nil {
+		t.Error(err)
+	}
+
+	fmt.Println(res)
+}
+
 func TestAddCampaignCriterions(t *testing.T) {
 	svc := getTestClient()
 
