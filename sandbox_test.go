@@ -41,7 +41,7 @@ func TestUnmarshalCampaignScope(t *testing.T) {
 }
 
 func getTestClient() *CampaignService {
-	client := &BingClient{
+	client := &Session{
 		AccountId:      os.Getenv("BING_ACCOUNT_ID"),
 		CustomerId:     os.Getenv("BING_CUSTOMER_ID"),
 		Username:       os.Getenv("BING_USERNAME"),

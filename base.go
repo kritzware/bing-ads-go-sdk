@@ -2,6 +2,7 @@ package bingads
 
 import (
 	"encoding/xml"
+	"net/http"
 )
 
 var (
@@ -49,7 +50,18 @@ type RequestHeader struct {
 	Username            string `xml:"UserName"`
 }
 
-type BingClient struct {
+type Session struct {
+	AccountId      string
+	CustomerId     string
+	DeveloperToken string
+	AuthToken      string
+	Username       string
+	Password       string
+	HTTPClient     *http.Client
+}
+
+type Config struct {
+	HTTPClient     *http.Client
 	AccountId      string
 	CustomerId     string
 	DeveloperToken string
@@ -58,13 +70,20 @@ type BingClient struct {
 	Password       string
 }
 
-func NewBingClient(customerAccountId string, customerId string, developerToken string, authToken string, username string, password string) *BingClient {
-	return &BingClient{
-		AccountId:      customerAccountId,
-		CustomerId:     customerId,
-		DeveloperToken: developerToken,
-		AuthToken:      authToken,
-		Username:       username,
-		Password:       password,
+func NewSession(config *Config) *Session {
+	s := &Session{
+		AccountId:      config.AccountId,
+		CustomerId:     config.CustomerId,
+		DeveloperToken: config.DeveloperToken,
+		AuthToken:      config.AuthToken,
+		Username:       config.Username,
+		Password:       config.Password,
+		HTTPClient:     config.HTTPClient,
 	}
+
+	if s.HTTPClient == nil {
+		s.HTTPClient = &http.Client{}
+	}
+
+	return s
 }

@@ -64,7 +64,7 @@ type CampaignService struct {
 	client   Client
 }
 
-func NewCampaignService(client *BingClient) *CampaignService {
+func NewCampaignService(client *Session) *CampaignService {
 	return &CampaignService{
 		endpoint: "https://campaign.api.bingads.microsoft.com/Api/Advertiser/CampaignManagement/v11/CampaignManagementService.svc",
 		client:   client,

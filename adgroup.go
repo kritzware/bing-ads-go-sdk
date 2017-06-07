@@ -17,11 +17,11 @@ type Date struct {
 //OwnedAndOperatedOnly
 //apparently required fields needs to be first or we get validation errors
 type AdGroup struct {
-	Id                          int64  `xml:"https://bingads.microsoft.com/CampaignManagement/v11 Id,omitempty"`
+	Id                          int64  `xml:",omitempty"`
 	AdDistribution              string `xml:",omitempty"`
 	Language                    string `xml:",omitempty"`
-	Name                        string `xml:"https://bingads.microsoft.com/CampaignManagement/v11 Name"`
-	Status                      string `xml:"https://bingads.microsoft.com/CampaignManagement/v11 Status,omitempty"`
+	Name                        string
+	Status                      string `xml:",omitempty"`
 	StartDate                   *Date
 	EndDate                     *Date
 	BiddingScheme               *BiddingScheme
@@ -35,8 +35,8 @@ type AdGroup struct {
 
 type GetAdGroupsByCampaignIdRequest struct {
 	XMLName    xml.Name `xml:"GetAdGroupsByCampaignIdRequest"`
-	CampaignId int64    `xml:"CampaignId"`
 	NS         string   `xml:"xmlns,attr"`
+	CampaignId int64
 }
 
 type GetAdGroupsByCampaignIdResponse struct {

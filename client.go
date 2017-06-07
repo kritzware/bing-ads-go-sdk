@@ -103,7 +103,7 @@ func (f *ErrorsType) Error() string {
 	return strings.Join(errors, "\n")
 }
 
-func (b *BingClient) SendRequest(body interface{}, endpoint string, soapAction string) ([]byte, error) {
+func (b *Session) SendRequest(body interface{}, endpoint string, soapAction string) ([]byte, error) {
 	envelope := RequestEnvelope{
 		EnvNS: "http://www.w3.org/2001/XMLSchema-instance",
 		EnvSS: "http://schemas.xmlsoap.org/soap/envelope/",
@@ -137,9 +137,7 @@ func (b *BingClient) SendRequest(body interface{}, endpoint string, soapAction s
 	httpRequest.Header.Add("Content-Type", "text/xml; charset=utf-8")
 	httpRequest.Header.Add("SOAPAction", soapAction)
 
-	c := http.Client{}
-
-	response, err := c.Do(httpRequest)
+	response, err := b.HTTPClient.Do(httpRequest)
 
 	if err != nil {
 		return nil, err
@@ -177,8 +175,8 @@ func (b *BingClient) SendRequest(body interface{}, endpoint string, soapAction s
 	return res.Body.OperationResponse, err
 }
 
-func New(customerAccountId string, customerId string, developerToken string, authToken string, username string, password string) *BingClient {
-	return &BingClient{
+func New(customerAccountId string, customerId string, developerToken string, authToken string, username string, password string) *Session {
+	return &Session{
 		AccountId:      customerAccountId,
 		CustomerId:     customerId,
 		DeveloperToken: developerToken,
