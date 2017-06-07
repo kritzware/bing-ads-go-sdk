@@ -36,7 +36,12 @@ func (s *CampaignCriterion) MarshalXML(e *xml.Encoder, start xml.StartElement) e
 	e.EncodeElement(s.CampaignId, st("CampaignId"))
 	e.Encode(s.Criterion)
 	e.Encode(s.Type)
-	e.EncodeElement("", st("Id", "i:nil", "true"))
+
+	if s.Id == 0 {
+		e.EncodeElement("", st("Id", "i:nil", "true"))
+	} else {
+		e.EncodeElement(s.Id, st("Id"))
+	}
 
 	e.EncodeToken(xml.EndElement{start.Name})
 	return nil

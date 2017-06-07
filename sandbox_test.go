@@ -14,6 +14,27 @@ func (s StringClient) SendRequest(_ interface{}, _, _ string) ([]byte, error) {
 	return []byte(s), nil
 }
 
+func TestSandboxGetSharedEntities(t *testing.T) {
+	svc := getTestClient()
+
+	res1, err := svc.AddSharedEntity(&NegativeKeywordList{
+		Name: "negative keyword list",
+	}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fmt.Println(res1)
+
+	res, err := svc.GetSharedEntitiesByAccountId("negative")
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fmt.Println(res)
+}
+
 func TestUnmarshalResponse(t *testing.T) {
 
 	s := StringClient(`<ApplyProductPartitionActionsResponse xmlns="https://bingads.microsoft.com/CampaignManagement/v11"><AdGroupCriterionIds xmlns:a="http://schemas.datacontract.org/2004/07/System" xmlns:i="http://www.w3.org/2001/XMLSchema-instance"><a:long>1</a:long><a:long>2</a:long><a:long>3</a:long></AdGroupCriterionIds><PartialErrors xmlns:i="http://www.w3.org/2001/XMLSchema-instance"/></ApplyProductPartitionActionsResponse>`)
