@@ -17,9 +17,9 @@ type GetSharedEntitiesByAccountIdResponse struct {
 //inherits from sharedentity and sharedlist
 type NegativeKeywordList struct {
 	AssociationCount int
-	Id               int64 `xml:",omitempty"`
+	Id               int64
 	Name             string
-	ItemCount        int               `xml:",omitempty"`
+	ItemCount        int
 	ListItems        []NegativeKeyword `xml:"ListIems>SharedListItem"`
 }
 
@@ -39,7 +39,7 @@ func (s *NegativeKeywordList) MarshalXML(e *xml.Encoder, start xml.StartElement)
 	}
 	e.EncodeElement(s.Name, st("Name"))
 	e.EncodeElement("NegativeKeywordList", st("Type"))
-	e.EncodeElement(s.ItemCount, st("ItemCount"))
+	e.EncodeElement(len(s.ListItems), st("ItemCount"))
 	if err := e.Encode(s.ListItems); err != nil {
 		return err
 	}
@@ -80,14 +80,30 @@ type GetListItemsBySharedListResponse struct {
 	ListItems []NegativeKeyword `xml:"ListItems>SharedListItem"`
 }
 
-//Exact Phrase Broad Content
+//MatchType: Exact Phrase Broad Content
 type NegativeKeyword struct {
-	XMLName   xml.Name `xml:"NegativeKeyword"`
-	Id        int64    `xml:",omitempty"`
-	TypeAttr  string   `xml:"i:type,attr,omitempty"`
-	Type      string
+	XMLName   xml.Name `xml:"SharedListItem"`
+	Id        int64
 	MatchType string
 	Text      string
+}
+
+func (s *NegativeKeyword) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	start.Attr = []xml.Attr{xml.Attr{Name: xml.Name{Local: "i:type"}, Value: "NegativeKeyword"}}
+	e.EncodeToken(start)
+	e.EncodeElement("NegativeKeyword", st("Type"))
+
+	if s.Id == 0 {
+		e.EncodeElement("", st("Id", "i:nil", "true"))
+	} else {
+		e.EncodeElement(s.Id, st("Id"))
+	}
+
+	e.EncodeElement(s.MatchType, st("MatchType"))
+	e.EncodeElement(s.Text, st("Text"))
+	e.EncodeToken(xml.EndElement{start.Name})
+
+	return nil
 }
 
 func (c *CampaignService) GetListItemsBySharedList(list NegativeKeywordList) ([]NegativeKeyword, error) {
@@ -114,8 +130,8 @@ func (c *CampaignService) GetListItemsBySharedList(list NegativeKeywordList) ([]
 type AddSharedEntityRequest struct {
 	XMLName      xml.Name `xml:"AddSharedEntityRequest"`
 	NS           string   `xml:"xmlns,attr"`
-	ListItems    []NegativeKeyword
 	SharedEntity *NegativeKeywordList
+	ListItems    []NegativeKeyword `xml:"ListItems>SharedListItem"`
 }
 
 type AddSharedEntityResponse struct {

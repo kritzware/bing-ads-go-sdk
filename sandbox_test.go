@@ -17,28 +17,36 @@ func (s StringClient) SendRequest(_ interface{}, _, _ string) ([]byte, error) {
 func TestSandboxGetSharedEntities(t *testing.T) {
 	svc := getTestClient()
 
+	items := []NegativeKeyword{{
+		//Id:        63001000817,
+		MatchType: "Phrase",
+		Text:      "asdf",
+	}}
+
 	res1, err := svc.AddSharedEntity(&NegativeKeywordList{
-		Name: "negative keyword list",
-	}, nil)
-	if err != nil {
-		t.Error(err)
-	}
-
-	fmt.Println(res1)
-
-	res, err := svc.GetSharedEntitiesByAccountId("negative")
-
+		Name: "asdf4 negative keyword list",
+	}, items)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	fmt.Println(res)
+	fmt.Println(res1)
+
+	/*
+		res, err := svc.GetSharedEntitiesByAccountId("negative")
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		fmt.Println(res)
+	*/
 
 	err = svc.SetSharedEntityAssociations([]SharedEntityAssociation{
 		{
 			EntityId:         804004280,
 			EntityType:       "Campaign",
-			SharedEntityId:   res[0].Id,
+			SharedEntityId:   res1.SharedEntityId,
 			SharedEntityType: "NegativeKeywordList",
 		},
 	})
