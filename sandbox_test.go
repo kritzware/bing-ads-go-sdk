@@ -2,6 +2,7 @@ package bingads
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"reflect"
 	"testing"
@@ -11,6 +12,95 @@ type StringClient string
 
 func (s StringClient) SendRequest(_ interface{}, _, _ string) ([]byte, error) {
 	return []byte(s), nil
+}
+
+func TestUnmarshalResponse(t *testing.T) {
+
+	s := StringClient(`<ApplyProductPartitionActionsResponse xmlns="https://bingads.microsoft.com/CampaignManagement/v11"><AdGroupCriterionIds xmlns:a="http://schemas.datacontract.org/2004/07/System" xmlns:i="http://www.w3.org/2001/XMLSchema-instance"><a:long>1</a:long><a:long>2</a:long><a:long>3</a:long></AdGroupCriterionIds><PartialErrors xmlns:i="http://www.w3.org/2001/XMLSchema-instance"/></ApplyProductPartitionActionsResponse>`)
+	svc := &CampaignService{
+		endpoint: "https://campaign.api.sandbox.bingads.microsoft.com/Api/Advertiser/CampaignManagement/v11/CampaignManagementService.svc",
+		client:   s,
+	}
+
+	res, err := svc.ApplyProductPartitionActions(nil)
+
+	if err != nil {
+		t.Error(err)
+	}
+	if len(res) != 3 {
+		t.Errorf("expected 3 ids, got %d", len(res))
+	}
+
+	s = StringClient(`<ApplyProductPartitionActionsResponse xmlns="https://bingads.microsoft.com/CampaignManagement/v11"><AdGroupCriterionIds xmlns:a="http://schemas.datacontract.org/2004/07/System" xmlns:i="http://www.w3.org/2001/XMLSchema-instance"><a:long i:nil="true"/></AdGroupCriterionIds><PartialErrors xmlns:i="http://www.w3.org/2001/XMLSchema-instance"><BatchError><Code>4129</Code><Details i:nil="true"/><ErrorCode>CampaignServiceDuplicateProductConditions</ErrorCode><FieldPath>ProductConditions</FieldPath><ForwardCompatibilityMap i:nil="true" xmlns:a="http://schemas.datacontract.org/2004/07/System.Collections.Generic"/><Index>0</Index><Message>Children of a product partition node cannot contain duplicate product conditions.</Message><Type>BatchError</Type></BatchError></PartialErrors></ApplyProductPartitionActionsResponse>`)
+	svc = &CampaignService{
+		endpoint: "https://campaign.api.sandbox.bingads.microsoft.com/Api/Advertiser/CampaignManagement/v11/CampaignManagementService.svc",
+		client:   s,
+	}
+
+	res, err = svc.ApplyProductPartitionActions(nil)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if len(res) != 0 {
+		t.Errorf("expected no ids")
+	}
+}
+
+func TestSandboxApplyProductPartitionActions(t *testing.T) {
+
+	/*
+				[
+		{4576098675327012 1159984767305062 {ProductPartition  []  Subdivision} Active BiddableAdGroupCriterion {  0}}
+		{4576098675327014 1159984767305062 {ProductPartition  [] 4576098675327012 Unit}
+		Active BiddableAdGroupCriterion {FixedBid  1}}
+		{4576098675327015 1159984767305062 {ProductPartition  [] 4576098675327012 Unit}
+		Active BiddableAdGroupCriterion {FixedBid  1}}
+		{4576098675327016 1159984767305062 {ProductPartition  [] 4576098675327012 Unit} Active BiddableAdGroupCriterion {FixedBid  1}}
+		{4576098675327036 1159984767305062 {ProductPartition  [] 4576098675327012 Subdivision} Active BiddableAdGroupCriterion {  0}}
+		{4576098675327037 1159984767305062 {ProductPartition  [] 4576098675327036 Unit} Active BiddableAdGroupCriterion {FixedBid  0.5}}
+		{4576098675327038 1159984767305062 {ProductPartition  [] 4576098675327036 Unit} Active BiddableAdGroupCriterion {FixedBid  0.35}}
+		{4576098675327039 1159984767305062 {ProductPartition  [] 4576098675327036 Unit} Active BiddableAdGroupCriterion {FixedBid  1}}]
+	*/
+	svc := getTestClient()
+
+	res, err := svc.GetAdGroupCriterionsByIds(1167681348701053)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	parentid := fmt.Sprintf("%d", res[0].Id)
+
+	a := BiddableAdGroupCriterion{
+		TypeAttr:  "BiddableAdGroupCriterion",
+		AdGroupId: 1167681348701053,
+		Criterion: Criterion{
+			Condition:         &ProductCondition{"str", "ProductType1"},
+			TypeAttr:          "ProductPartition",
+			ParentCriterionId: parentid,
+			Type:              "ProductPartition",
+			PartitionType:     Unit,
+		},
+		Status: Active,
+		Type:   "BiddableAdGroupCriterion",
+		CriterionBid: CriterionBid{
+			Type:     "FixedBid",
+			TypeAttr: "FixedBid",
+			Amount:   0.35,
+		},
+	}
+
+	actions := []AdGroupCriterionAction{
+		{"Add", a},
+	}
+
+	res2, err := svc.ApplyProductPartitionActions(actions)
+
+	if err != nil {
+		t.Error(err)
+	}
+
+	fmt.Println(res2)
 }
 
 func TestUnmarshalCampaignScope(t *testing.T) {
@@ -30,8 +120,8 @@ func TestUnmarshalCampaignScope(t *testing.T) {
 		Type:       "BiddableCampaignCriterion",
 		Id:         840001008,
 		Criterion: Criterion{
-			Type:       ProductScope,
-			Conditions: []ProductCondition{{"top_brand", "CustomLabel0"}},
+			Type:      ProductScope,
+			Condition: &ProductCondition{"top_brand", "CustomLabel0"},
 		},
 	}}
 
@@ -47,6 +137,7 @@ func getTestClient() *CampaignService {
 		Username:       os.Getenv("BING_USERNAME"),
 		Password:       os.Getenv("BING_PASSWORD"),
 		DeveloperToken: os.Getenv("BING_DEV_TOKEN"),
+		HTTPClient:     &http.Client{},
 	}
 
 	return &CampaignService{
@@ -105,14 +196,9 @@ func TestAddCampaignCriterions(t *testing.T) {
 			CampaignId: 804004280,
 			Nil:        "true",
 			Criterion: Criterion{
-				Type:     "ProductScope",
-				TypeAttr: "ProductScope",
-				Conditions: []ProductCondition{
-					{
-						Attribute: "top_brand",
-						Operand:   "CustomLabel0",
-					},
-				},
+				Type:      "ProductScope",
+				TypeAttr:  "ProductScope",
+				Condition: &ProductCondition{"top_brand", "CustomLabel0"},
 			},
 		},
 	}

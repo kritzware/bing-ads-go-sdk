@@ -102,7 +102,7 @@ type AddCampaignCriterionsRequest struct {
 }
 
 type AddCampaignCriterionsResponse struct {
-	CampaignCriterionIds []int64 `xml:"CampaignCriterionIds>a1:long"`
+	CampaignCriterionIds []int64 `xml:"CampaignCriterionIds>a:long"`
 }
 
 func (c *CampaignService) GetCampaignCriterionsByIds(campaign int64) ([]CampaignCriterion, error) {
