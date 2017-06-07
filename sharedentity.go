@@ -23,6 +23,7 @@ type NegativeKeywordList struct {
 	ListItems        []NegativeKeyword `xml:"ListIems>SharedListItem"`
 }
 
+//these nil ids
 func (s *NegativeKeywordList) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	start.Attr = []xml.Attr{xml.Attr{Name: xml.Name{Local: "i:type"}, Value: "NegativeKeywordList"}}
 	e.EncodeToken(start)
@@ -46,7 +47,6 @@ func (s *NegativeKeywordList) MarshalXML(e *xml.Encoder, start xml.StartElement)
 	e.EncodeToken(xml.EndElement{start.Name})
 
 	return nil
-
 }
 
 func (c *CampaignService) GetSharedEntitiesByAccountId(entityType string) ([]NegativeKeywordList, error) {
@@ -68,7 +68,6 @@ func (c *CampaignService) GetSharedEntitiesByAccountId(entityType string) ([]Neg
 	}
 
 	return ret.SharedEntities, err
-
 }
 
 type GetListItemsBySharedListRequest struct {
@@ -139,4 +138,32 @@ func (c *CampaignService) AddSharedEntity(entity *NegativeKeywordList, items []N
 	ret := &AddSharedEntityResponse{}
 	err = xml.Unmarshal(resp, ret)
 	return ret, err
+}
+
+type SharedEntityAssociation struct {
+	EntityId         int64
+	EntityType       string
+	SharedEntityId   int64
+	SharedEntityType string
+}
+
+type SetSharedEntityAssociationsRequest struct {
+	XMLName      xml.Name                  `xml:"SetSharedEntityAssociationsRequest"`
+	NS           string                    `xml:"xmlns,attr"`
+	Associations []SharedEntityAssociation `xml:"Associations>SharedEntityAssociation"`
+}
+
+type SetSharedEntityAssociationsResponse struct {
+	ListItemIds    []int64 `xml:"ListItemIds>long"`
+	SharedEntityId int64
+}
+
+func (c *CampaignService) SetSharedEntityAssociations(associations []SharedEntityAssociation) error {
+	req := SetSharedEntityAssociationsRequest{
+		NS:           "https://bingads.microsoft.com/CampaignManagement/v11",
+		Associations: associations,
+	}
+	_, err := c.client.SendRequest(req, c.endpoint, "SetSharedEntityAssociations")
+
+	return err
 }

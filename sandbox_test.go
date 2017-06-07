@@ -21,7 +21,7 @@ func TestSandboxGetSharedEntities(t *testing.T) {
 		Name: "negative keyword list",
 	}, nil)
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 
 	fmt.Println(res1)
@@ -33,6 +33,19 @@ func TestSandboxGetSharedEntities(t *testing.T) {
 	}
 
 	fmt.Println(res)
+
+	err = svc.SetSharedEntityAssociations([]SharedEntityAssociation{
+		{
+			EntityId:         804004280,
+			EntityType:       "Campaign",
+			SharedEntityId:   res[0].Id,
+			SharedEntityType: "NegativeKeywordList",
+		},
+	})
+
+	if err != nil {
+		t.Error(err)
+	}
 }
 
 func TestUnmarshalResponse(t *testing.T) {
