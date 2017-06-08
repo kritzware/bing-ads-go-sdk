@@ -156,6 +156,41 @@ func (c *CampaignService) AddSharedEntity(entity *NegativeKeywordList, items []N
 	return ret, err
 }
 
+type DeleteSharedEntitiesRequest struct {
+	XMLName        xml.Name              `xml:"DeleteSharedEntitiesRequest"`
+	NS             string                `xml:"xmlns,attr"`
+	SharedEntities []NegativeKeywordList `xml:"SharedEntities>SharedEntity"`
+}
+
+type BatchError struct {
+	Code      int
+	Details   string
+	ErrorCode string
+	FieldPath string
+	Index     int
+	Message   string
+	Type      string
+}
+
+type DeleteSharedEntitiesResponse struct {
+	PartialErrors []BatchError `xml:"PartialErrors>BatchError"`
+}
+
+func (c *CampaignService) DeleteSharedEntities(list []NegativeKeywordList) ([]BatchError, error) {
+	req := DeleteSharedEntitiesRequest{
+		NS:             "https://bingads.microsoft.com/CampaignManagement/v11",
+		SharedEntities: list,
+	}
+	res, err := c.client.SendRequest(req, c.endpoint, "DeleteSharedEntities")
+	if err != nil {
+		return nil, err
+	}
+
+	ret := &DeleteSharedEntitiesResponse{}
+	err = xml.Unmarshal(res, ret)
+	return ret.PartialErrors, err
+}
+
 type SharedEntityAssociation struct {
 	EntityId         int64
 	EntityType       string
@@ -182,4 +217,112 @@ func (c *CampaignService) SetSharedEntityAssociations(associations []SharedEntit
 	_, err := c.client.SendRequest(req, c.endpoint, "SetSharedEntityAssociations")
 
 	return err
+}
+
+type GetSharedEntityAssociationsBySharedEntityIdsRequest struct {
+	XMLName          xml.Name `xml:"GetSharedEntityAssociationsBySharedEntityIdsRequest"`
+	NS               string   `xml:"xmlns,attr"`
+	EntityType       string
+	SharedEntityIds  SharedEntityIds // `xml:"SharedEntityIds>long"`
+	SharedEntityType string
+}
+
+type SharedEntityIds []int64
+
+func (s SharedEntityIds) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	start.Attr = []xml.Attr{xml.Attr{Name: xml.Name{Local: "i:nil"}, Value: "false"}, xml.Attr{Name: xml.Name{Local: "xmlns:a"}, Value: "http://schemas.microsoft.com/2003/10/Serialization/Arrays"}}
+	e.EncodeToken(start)
+	for _, id := range s {
+		e.EncodeElement(id, st("a:long"))
+	}
+	e.EncodeToken(xml.EndElement{start.Name})
+	return nil
+}
+
+type GetSharedEntityAssociationsBySharedEntityIdsResponse struct {
+	Associations  []SharedEntityAssociation `xml:"Associations>SharedEntityAssociation"`
+	PartialErrors []BatchError              `xml:"PartialErrors>BatchError"`
+}
+
+func (c *CampaignService) GetSharedEntityAssociationsBySharedEntityIds(ids []int64) (*GetSharedEntityAssociationsBySharedEntityIdsResponse, error) {
+	req := GetSharedEntityAssociationsBySharedEntityIdsRequest{
+		NS:               "https://bingads.microsoft.com/CampaignManagement/v11",
+		EntityType:       "Campaign",
+		SharedEntityType: "NegativeKeywordList",
+		SharedEntityIds:  SharedEntityIds(ids),
+	}
+	res, err := c.client.SendRequest(req, c.endpoint, "GetSharedEntityAssociationsBySharedEntityIds")
+	if err != nil {
+		return nil, err
+	}
+
+	ret := &GetSharedEntityAssociationsBySharedEntityIdsResponse{}
+	err = xml.Unmarshal(res, ret)
+	return ret, err
+}
+
+type EntityIds []int64
+
+func (s EntityIds) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	start.Attr = []xml.Attr{xml.Attr{Name: xml.Name{Local: "i:nil"}, Value: "false"}, xml.Attr{Name: xml.Name{Local: "xmlns:a"}, Value: "http://schemas.microsoft.com/2003/10/Serialization/Arrays"}}
+	e.EncodeToken(start)
+	for _, id := range s {
+		e.EncodeElement(id, st("a:long"))
+	}
+	e.EncodeToken(xml.EndElement{start.Name})
+	return nil
+}
+
+type GetSharedEntityAssociationsByEntityIdsRequest struct {
+	XMLName          xml.Name  `xml:"GetSharedEntityAssociationsByEntityIdsRequest"`
+	NS               string    `xml:"xmlns,attr"`
+	EntityIds        EntityIds // `xml:"EntityIds>long"`
+	EntityType       string
+	SharedEntityType string
+}
+type GetSharedEntityAssociationsByEntityIdsResponse struct {
+	Associations  []SharedEntityAssociation `xml:"Associations>SharedEntityAssociation"`
+	PartialErrors []BatchError              `xml:"PartialErrors>BatchError"`
+}
+
+func (c *CampaignService) GetSharedEntityAssociationsByEntityIds(ids []int64) (*GetSharedEntityAssociationsByEntityIdsResponse, error) {
+	req := GetSharedEntityAssociationsByEntityIdsRequest{
+		NS:               "https://bingads.microsoft.com/CampaignManagement/v11",
+		EntityType:       "Campaign",
+		SharedEntityType: "NegativeKeywordList",
+		EntityIds:        ids,
+	}
+	res, err := c.client.SendRequest(req, c.endpoint, "GetSharedEntityAssociationsByEntityIds")
+	if err != nil {
+		return nil, err
+	}
+
+	ret := &GetSharedEntityAssociationsByEntityIdsResponse{}
+	err = xml.Unmarshal(res, ret)
+	return ret, err
+}
+
+type DeleteSharedEntityAssociationsRequest struct {
+	XMLName      xml.Name                  `xml:"DeleteSharedEntityAssociationsRequest"`
+	NS           string                    `xml:"xmlns,attr"`
+	Associations []SharedEntityAssociation `xml:"Associations>SharedEntityAssociation"`
+}
+
+type DeleteSharedEntityAssociationsResponse struct {
+	PartialErrors []BatchError `xml:"PartialErrors>BatchError"`
+}
+
+func (c *CampaignService) DeleteSharedEntityAssociations(list []SharedEntityAssociation) ([]BatchError, error) {
+	req := DeleteSharedEntityAssociationsRequest{
+		NS:           "https://bingads.microsoft.com/CampaignManagement/v11",
+		Associations: list,
+	}
+	res, err := c.client.SendRequest(req, c.endpoint, "DeleteSharedEntityAssociations")
+	if err != nil {
+		return nil, err
+	}
+
+	ret := &DeleteSharedEntityAssociationsResponse{}
+	err = xml.Unmarshal(res, ret)
+	return ret.PartialErrors, err
 }

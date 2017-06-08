@@ -30,6 +30,7 @@ type AdApiError struct {
 	Message   string `xml:"AdApiError>Message"`
 }
 
+/*
 type BatchError struct {
 	Code      int64  `xml:"BatchError>Code"`
 	Details   string `xml:"BatchError>Details"`
@@ -37,6 +38,7 @@ type BatchError struct {
 	Index     int64  `xml:"BatchError>Index"`
 	Message   string `xml:"BatchError>Message"`
 }
+*/
 
 type EditorialError struct {
 	Appealable       bool   `xml:"EditorialError>Appealable"`

@@ -14,8 +14,46 @@ func (s StringClient) SendRequest(_ interface{}, _, _ string) ([]byte, error) {
 	return []byte(s), nil
 }
 
+func getIds(xs []NegativeKeywordList) []int64 {
+	r := make([]int64, len(xs))
+
+	for i := 0; i < len(xs); i++ {
+		r[i] = xs[i].Id
+	}
+	return r
+}
+
 func TestSandboxGetSharedEntities(t *testing.T) {
 	svc := getTestClient()
+
+	existing, err := svc.GetSharedEntitiesByAccountId("NegativeKeywordList")
+	if err != nil {
+		t.Fatal(existing)
+	}
+
+	a, err := svc.GetSharedEntityAssociationsByEntityIds([]int64{804004280})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	partials, err := svc.DeleteSharedEntityAssociations(a.Associations)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(partials) > 0 {
+		t.Fatal(partials)
+	}
+
+	partials, err = svc.DeleteSharedEntities(existing)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(partials) > 0 {
+		t.Fatal(partials)
+	}
 
 	items := []NegativeKeyword{{
 		//Id:        63001000817,
@@ -23,30 +61,20 @@ func TestSandboxGetSharedEntities(t *testing.T) {
 		Text:      "asdf",
 	}}
 
-	res1, err := svc.AddSharedEntity(&NegativeKeywordList{
-		Name: "asdf4 negative keyword list",
+	added, err := svc.AddSharedEntity(&NegativeKeywordList{
+		Name: "asdf negative keyword list",
 	}, items)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	fmt.Println(res1)
-
-	/*
-		res, err := svc.GetSharedEntitiesByAccountId("negative")
-
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		fmt.Println(res)
-	*/
+	fmt.Println(added)
 
 	err = svc.SetSharedEntityAssociations([]SharedEntityAssociation{
 		{
 			EntityId:         804004280,
 			EntityType:       "Campaign",
-			SharedEntityId:   res1.SharedEntityId,
+			SharedEntityId:   added.SharedEntityId,
 			SharedEntityType: "NegativeKeywordList",
 		},
 	})
