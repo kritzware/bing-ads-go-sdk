@@ -37,16 +37,18 @@ func TestSandboxGetSharedEntities(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	partials, err := svc.DeleteSharedEntityAssociations(a.Associations)
-	if err != nil {
-		t.Fatal(err)
+	if len(a.Associations) > 0 {
+		partials, err := svc.DeleteSharedEntityAssociations(a.Associations)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if len(partials) > 0 {
+			t.Fatal(partials)
+		}
 	}
 
-	if len(partials) > 0 {
-		t.Fatal(partials)
-	}
-
-	partials, err = svc.DeleteSharedEntities(existing)
+	partials, err := svc.DeleteSharedEntities(existing)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -58,7 +60,7 @@ func TestSandboxGetSharedEntities(t *testing.T) {
 	items := []NegativeKeyword{{
 		//Id:        63001000817,
 		MatchType: "Phrase",
-		Text:      "asdf",
+		Text:      "asdf-1",
 	}}
 
 	added, err := svc.AddSharedEntity(&NegativeKeywordList{
@@ -68,7 +70,20 @@ func TestSandboxGetSharedEntities(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	fmt.Println(added)
+	items2 := []NegativeKeyword{{
+		//Id:        63001000817,
+		MatchType: "Phrase",
+		Text:      "asdf-2",
+	}}
+
+	sa, err := svc.AddListItemsToSharedList(&NegativeKeywordList{Id: added.SharedEntityId}, items2)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(sa.PartialErrors) > 0 {
+		t.Fatal(sa.PartialErrors)
+	}
 
 	err = svc.SetSharedEntityAssociations([]SharedEntityAssociation{
 		{

@@ -1,15 +1,20 @@
-# Badsoap
-
 WIP implementation of select features in Bing Ads' V11 API
 
 ### Currently supported features:
-- AddCampaigns
-- GetAdGroupCriterionsByIds
-- ApplyProductPartitionActions
-- GetCampaignsByAccountId
+- AddAdGroups
 - AddCampaignCriterions
-- GetCampaignCriterionsByIds
-- GetSharedEntitiesByAccountId
-- GetListItemsBySharedList
+- AddCampaigns
+- AddListItemsToSharedList
 - AddSharedEntity
+- ApplyProductPartitionActions
+- DeleteSharedEntities
+- DeleteSharedEntityAssociations
+- GetAdGroupCriterionsByIds
+- GetAdGroupsByCampaignId
+- GetCampaignCriterionsByIds
+- GetCampaignsByAccountId
+- GetListItemsBySharedList
+- GetSharedEntitiesByAccountId
+- GetSharedEntityAssociationsByEntityIds
+- GetSharedEntityAssociationsBySharedEntityIds
 - SetSharedEntityAssociations

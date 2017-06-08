@@ -244,6 +244,7 @@ type GetSharedEntityAssociationsBySharedEntityIdsResponse struct {
 	PartialErrors []BatchError              `xml:"PartialErrors>BatchError"`
 }
 
+//gives us an internal service error in sandbox
 func (c *CampaignService) GetSharedEntityAssociationsBySharedEntityIds(ids []int64) (*GetSharedEntityAssociationsBySharedEntityIdsResponse, error) {
 	req := GetSharedEntityAssociationsBySharedEntityIdsRequest{
 		NS:               "https://bingads.microsoft.com/CampaignManagement/v11",
@@ -325,4 +326,32 @@ func (c *CampaignService) DeleteSharedEntityAssociations(list []SharedEntityAsso
 	ret := &DeleteSharedEntityAssociationsResponse{}
 	err = xml.Unmarshal(res, ret)
 	return ret.PartialErrors, err
+}
+
+type AddListItemsToSharedListRequest struct {
+	XMLName    xml.Name          `xml:"AddListItemsToSharedListRequest"`
+	NS         string            `xml:"xmlns,attr"`
+	ListItems  []NegativeKeyword `xml:"ListItems>SharedListItem"`
+	SharedList *NegativeKeywordList
+}
+
+type AddListItemsToSharedListResponse struct {
+	ListItemIds   []int64      `xml:"ListItemIds>long"`
+	PartialErrors []BatchError `xml:"PartialErrors>BatchError"`
+}
+
+func (c *CampaignService) AddListItemsToSharedList(list *NegativeKeywordList, items []NegativeKeyword) (*AddListItemsToSharedListResponse, error) {
+	req := AddListItemsToSharedListRequest{
+		NS:         "https://bingads.microsoft.com/CampaignManagement/v11",
+		SharedList: list,
+		ListItems:  items,
+	}
+	res, err := c.client.SendRequest(req, c.endpoint, "AddListItemsToSharedList")
+	if err != nil {
+		return nil, err
+	}
+
+	ret := &AddListItemsToSharedListResponse{}
+	err = xml.Unmarshal(res, ret)
+	return ret, err
 }
