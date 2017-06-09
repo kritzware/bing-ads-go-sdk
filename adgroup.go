@@ -25,7 +25,7 @@ type AdGroup struct {
 	StartDate                   *Date
 	EndDate                     *Date
 	BiddingScheme               *BiddingScheme
-	NativeBidAdjustment         int    `xml:",omitempty"`
+	NativeBidAdjustment         string `xml:",omitempty"`
 	Network                     string `xml:",omitempty"`
 	PricingModel                string `xml:",omitempty"`
 	RemarketingTargetingSetting string `xml:",omitempty"`
@@ -60,7 +60,7 @@ func (c *CampaignService) GetAdgroupsByCampaign(campaign int64) ([]AdGroup, erro
 	return ret.AdGroups, err
 }
 
-func (c *CampaignService) AddAdGroups(campaign int64, adgroups []AdGroup) ([]int64, error) {
+func (c *CampaignService) AddAdGroups(campaign int64, adgroups []AdGroup) (*AddAdGroupsResponse, error) {
 	req := AddAdGroupsRequest{
 		NS:         "https://bingads.microsoft.com/CampaignManagement/v11",
 		CampaignId: campaign,
@@ -73,9 +73,9 @@ func (c *CampaignService) AddAdGroups(campaign int64, adgroups []AdGroup) ([]int
 		return nil, err
 	}
 
-	ret := AddAdGroupsResponse{}
-	err = xml.Unmarshal(resp, &ret)
-	return ret.AdGroupIds, err
+	ret := &AddAdGroupsResponse{}
+	err = xml.Unmarshal(resp, ret)
+	return ret, err
 
 }
 
@@ -87,5 +87,6 @@ type AddAdGroupsRequest struct {
 }
 
 type AddAdGroupsResponse struct {
-	AdGroupIds []int64 `xml:"AdGroupIds>long"`
+	AdGroupIds    Longs        `xml:"AdGroupIds>long"`
+	PartialErrors []BatchError `xml:"PartialErrors>BatchError"`
 }

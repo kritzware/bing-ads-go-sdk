@@ -4,23 +4,6 @@ import (
 	"encoding/xml"
 )
 
-type NilId struct {
-	Value int64  `xml:",chardata"`
-	Attr  string `xml:",attr"`
-}
-
-func st(name string, attrs ...string) xml.StartElement {
-	ret := xml.StartElement{
-		Name: xml.Name{Local: name},
-	}
-
-	for i := 0; i < len(attrs); i += 2 {
-		ret.Attr = append(ret.Attr, xml.Attr{xml.Name{Local: attrs[i]}, attrs[i+1]})
-	}
-
-	return ret
-}
-
 func (s *CampaignCriterion) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	start.Attr = []xml.Attr{xml.Attr{Name: xml.Name{Local: "i:type"}, Value: s.Type}}
 	e.EncodeToken(start)
@@ -81,7 +64,7 @@ type CriterionBid struct {
 }
 
 func (s CriterionBid) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
-	start.Attr = []xml.Attr{xml.Attr{Name: xml.Name{Local: "i:type"}, Value: "FixedBid"}}
+	start.Attr = ats("i:type", "FixedBid")
 	e.EncodeToken(start)
 
 	e.EncodeElement("FixedBid", st("Type"))

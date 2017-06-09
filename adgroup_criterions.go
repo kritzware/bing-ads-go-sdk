@@ -22,7 +22,7 @@ type Criterion struct {
 }
 
 func (s Criterion) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
-	start.Attr = []xml.Attr{xml.Attr{Name: xml.Name{Local: "i:type"}, Value: "ProductPartition"}}
+	start.Attr = ats("i:type", "ProductPartition")
 	e.EncodeToken(start)
 	e.EncodeElement("ProductPartition", st("Type"))
 	//e.Encode(s.Condition)
@@ -141,14 +141,15 @@ type ApplyProductPartitionActionsRequest struct {
 	CriterionActions []AdGroupCriterionAction `xml:"CriterionActions>AdGroupCriterionAction"`
 }
 
-type AdGroupCriterionIds []int64
+//type AdGroupCriterionIds []int64
+type Longs []int64
 
 type ApplyProductPartitionActionsResponse struct {
-	AdGroupCriterionIds AdGroupCriterionIds `xml:"AdGroupCriterionIds>long"`
-	PartialErrors       []BatchError        `xml:"PartialErrors>BatchError"`
+	AdGroupCriterionIds Longs        `xml:"AdGroupCriterionIds>long"`
+	PartialErrors       []BatchError `xml:"PartialErrors>BatchError"`
 }
 
-func (s *AdGroupCriterionIds) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
+func (s *Longs) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
 	for token, err := dec.Token(); err == nil; token, err = dec.Token() {
 		if err != nil {
 			return err

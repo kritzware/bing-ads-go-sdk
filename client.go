@@ -160,11 +160,9 @@ func (b *Session) SendRequest(body interface{}, endpoint string, soapAction stri
 		return nil, err
 	}
 
-	/*
-		fmt.Println(">>>")
-		fmt.Println(string(res.Body.OperationResponse))
-		fmt.Println(">>>")
-	*/
+	fmt.Println(">>>")
+	fmt.Println(string(res.Body.OperationResponse))
+	fmt.Println(">>>")
 
 	switch response.StatusCode {
 	case 400, 401, 403, 405, 500:
