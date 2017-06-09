@@ -17,8 +17,8 @@ type Criterion struct {
 	Type      string
 	Condition ProductCondition //`xml:"Conditions>ProductCondition"`
 	//should be nullable int64
-	ParentCriterionId string               `xml:",omitempty"`
-	PartitionType     ProductPartitionType `xml:",omitempty"`
+	ParentCriterionId string `xml:",omitempty"`
+	PartitionType     string `xml:",omitempty"`
 }
 
 func (s Criterion) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
@@ -71,7 +71,8 @@ type BiddableAdGroupCriterion struct {
 	AdGroupId    int64
 	Criterion    Criterion
 	Id           int64 `xml:",omitempty"`
-	Status       CriterionStatus
+	Status       string
+	Type         string
 	CriterionBid CriterionBid
 }
 

@@ -12,19 +12,19 @@ type BiddingScheme struct {
 var ManualCpc = BiddingScheme{Type: "ManualCpc", TypeAttr: "ManualCpcBiddingScheme"}
 
 type Campaign struct {
-	BiddingScheme BiddingScheme `xml:"https://bingads.microsoft.com/CampaignManagement/v11 BiddingScheme"`
-	BudgetType    BudgetType    `xml:"https://bingads.microsoft.com/CampaignManagement/v11 BudgetType"`
+	BiddingScheme BiddingScheme `xml:"BiddingScheme"`
+	BudgetType    BudgetType    `xml:"BudgetType"`
 	BudgetId      string        `xml:",omitempty"`
-	DailyBudget   float64       `xml:"https://bingads.microsoft.com/CampaignManagement/v11 DailyBudget"`
-	Description   string        `xml:"https://bingads.microsoft.com/CampaignManagement/v11 Description"`
-	Id            int64         `xml:"https://bingads.microsoft.com/CampaignManagement/v11 Id,omitempty"`
-	Name          string        `xml:"https://bingads.microsoft.com/CampaignManagement/v11 Name"`
+	DailyBudget   float64       `xml:"DailyBudget"`
+	Description   string        `xml:"Description"`
+	Id            int64         `xml:"Id,omitempty"`
+	Name          string        `xml:"Name"`
 	//maybe parse into sql nullable int?
 	//NativeBidAdjustment int     `xml:"https://bingads.microsoft.com/CampaignManagement/v11 NativeBidAdjustment"`
-	Status       string             `xml:"https://bingads.microsoft.com/CampaignManagement/v11 Status"`
-	TimeZone     string             `xml:"https://bingads.microsoft.com/CampaignManagement/v11 TimeZone"`
-	CampaignType CampaignType       `xml:"https://bingads.microsoft.com/CampaignManagement/v11 CampaignType"`
-	Settings     []CampaignSettings `xml:"https://bingads.microsoft.com/CampaignManagement/v11 Settings>Setting"`
+	Status       string             `xml:"Status"`
+	TimeZone     string             `xml:"TimeZone"`
+	CampaignType CampaignType       `xml:"CampaignType"`
+	Settings     []CampaignSettings `xml:"Settings>Setting"`
 }
 
 //TODO: split into shoppingsetting + dynamicsearachadssetting
@@ -79,7 +79,7 @@ type GetCampaignsByAccountIdRequest struct {
 }
 
 type GetCampaignsByAccountIdResponse struct {
-	Campaigns []Campaign `xml:"https://bingads.microsoft.com/CampaignManagement/v11 Campaigns>Campaign"`
+	Campaigns []Campaign `xml:"Campaigns>Campaign"`
 }
 
 func (c *CampaignService) GetCampaignsByAccountId(account string, campaignType CampaignType) ([]Campaign, error) {

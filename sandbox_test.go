@@ -163,9 +163,9 @@ func TestSandboxApplyProductPartitionActions(t *testing.T) {
 		Criterion: Criterion{
 			Condition:         ProductCondition{"int", "ProductType1"},
 			ParentCriterionId: parentid,
-			PartitionType:     Unit,
+			PartitionType:     "Unit",
 		},
-		Status: Active,
+		Status: "Active",
 		CriterionBid: CriterionBid{
 			Amount: 0.35,
 		},
