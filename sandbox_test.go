@@ -112,8 +112,8 @@ func TestUnmarshalResponse(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if len(res) != 3 {
-		t.Errorf("expected 3 ids, got %d", len(res))
+	if len(res.AdGroupCriterionIds) != 3 {
+		t.Errorf("expected 3 ids, got %d", len(res.AdGroupCriterionIds))
 	}
 
 	s = StringClient(`<ApplyProductPartitionActionsResponse xmlns="https://bingads.microsoft.com/CampaignManagement/v11"><AdGroupCriterionIds xmlns:a="http://schemas.datacontract.org/2004/07/System" xmlns:i="http://www.w3.org/2001/XMLSchema-instance"><a:long i:nil="true"/></AdGroupCriterionIds><PartialErrors xmlns:i="http://www.w3.org/2001/XMLSchema-instance"><BatchError><Code>4129</Code><Details i:nil="true"/><ErrorCode>CampaignServiceDuplicateProductConditions</ErrorCode><FieldPath>ProductConditions</FieldPath><ForwardCompatibilityMap i:nil="true" xmlns:a="http://schemas.datacontract.org/2004/07/System.Collections.Generic"/><Index>0</Index><Message>Children of a product partition node cannot contain duplicate product conditions.</Message><Type>BatchError</Type></BatchError></PartialErrors></ApplyProductPartitionActionsResponse>`)
@@ -127,7 +127,7 @@ func TestUnmarshalResponse(t *testing.T) {
 		t.Error(err)
 	}
 
-	if len(res) != 0 {
+	if len(res.AdGroupCriterionIds) != 0 {
 		t.Errorf("expected no ids")
 	}
 }
@@ -154,24 +154,20 @@ func TestSandboxApplyProductPartitionActions(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	fmt.Println(res)
+
 	parentid := fmt.Sprintf("%d", res[0].Id)
 
 	a := BiddableAdGroupCriterion{
-		TypeAttr:  "BiddableAdGroupCriterion",
 		AdGroupId: 1167681348701053,
 		Criterion: Criterion{
-			Condition:         &ProductCondition{"str", "ProductType1"},
-			TypeAttr:          "ProductPartition",
+			Condition:         ProductCondition{"int", "ProductType1"},
 			ParentCriterionId: parentid,
-			Type:              "ProductPartition",
 			PartitionType:     Unit,
 		},
 		Status: Active,
-		Type:   "BiddableAdGroupCriterion",
 		CriterionBid: CriterionBid{
-			Type:     "FixedBid",
-			TypeAttr: "FixedBid",
-			Amount:   0.35,
+			Amount: 0.35,
 		},
 	}
 
@@ -180,6 +176,37 @@ func TestSandboxApplyProductPartitionActions(t *testing.T) {
 	}
 
 	res2, err := svc.ApplyProductPartitionActions(actions)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(res2.AdGroupCriterionIds) != 1 {
+		t.Fatalf("expected 1 created, got %d", len(res2.AdGroupCriterionIds))
+	}
+
+	a.Id = res2.AdGroupCriterionIds[0]
+
+	actions = []AdGroupCriterionAction{{"Delete", a}}
+
+	/*
+		for _, part := range res {
+			if part.Criterion.ParentCriterionId == "" {
+				continue
+			}
+
+			if part.Criterion.Condition.Attribute == "" {
+				continue
+			}
+			actions = append(actions, AdGroupCriterionAction{"Delete", part})
+		}
+	*/
+
+	res2, err = svc.ApplyProductPartitionActions(actions)
+
+	if len(res2.AdGroupCriterionIds) != 1 {
+		t.Errorf("expected 1 delete, got %d", len(res2.AdGroupCriterionIds))
+	}
 
 	if err != nil {
 		t.Error(err)
@@ -206,7 +233,7 @@ func TestUnmarshalCampaignScope(t *testing.T) {
 		Id:         840001008,
 		Criterion: Criterion{
 			Type:      ProductScope,
-			Condition: &ProductCondition{"top_brand", "CustomLabel0"},
+			Condition: ProductCondition{"top_brand", "CustomLabel0"},
 		},
 	}}
 
@@ -282,8 +309,7 @@ func TestAddCampaignCriterions(t *testing.T) {
 			Nil:        "true",
 			Criterion: Criterion{
 				Type:      "ProductScope",
-				TypeAttr:  "ProductScope",
-				Condition: &ProductCondition{"top_brand", "CustomLabel0"},
+				Condition: ProductCondition{"top_brand", "CustomLabel0"},
 			},
 		},
 	}

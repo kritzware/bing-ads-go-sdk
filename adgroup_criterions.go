@@ -15,11 +15,29 @@ type ProductCondition struct {
 //https://msdn.microsoft.com/en-us/library/bing-ads-campaign-management-getcampaigncriterionsbyids.aspx
 type Criterion struct {
 	Type      string
-	TypeAttr  string            `xml:"i:type,attr"`
-	Condition *ProductCondition //`xml:"Conditions>ProductCondition"`
+	Condition ProductCondition //`xml:"Conditions>ProductCondition"`
 	//should be nullable int64
 	ParentCriterionId string               `xml:",omitempty"`
 	PartitionType     ProductPartitionType `xml:",omitempty"`
+}
+
+func (s Criterion) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	start.Attr = []xml.Attr{xml.Attr{Name: xml.Name{Local: "i:type"}, Value: "ProductPartition"}}
+	e.EncodeToken(start)
+	e.EncodeElement("ProductPartition", st("Type"))
+	//e.Encode(s.Condition)
+	e.EncodeElement(s.Condition, st("Condition"))
+
+	if s.ParentCriterionId != "" {
+		e.EncodeElement(s.ParentCriterionId, st("ParentCriterionId"))
+	}
+
+	if s.PartitionType != "" {
+		e.EncodeElement(s.PartitionType, st("PartitionType"))
+	}
+
+	e.EncodeToken(xml.EndElement{start.Name})
+	return nil
 }
 
 type CriterionType string
@@ -50,13 +68,26 @@ type AdGroupCriterion struct {
 	CriterionBid CriterionBid
 }
 type BiddableAdGroupCriterion struct {
-	TypeAttr     string `xml:"i:type,attr"`
 	AdGroupId    int64
 	Criterion    Criterion
 	Id           int64 `xml:",omitempty"`
 	Status       CriterionStatus
-	Type         string
 	CriterionBid CriterionBid
+}
+
+func (s BiddableAdGroupCriterion) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	start.Attr = []xml.Attr{xml.Attr{Name: xml.Name{Local: "i:type"}, Value: "BiddableAdGroupCriterion"}}
+	e.EncodeToken(start)
+	e.EncodeElement(s.AdGroupId, st("AdGroupId"))
+	e.Encode(s.Criterion)
+	if s.Id != 0 {
+		e.EncodeElement(s.Id, st("Id"))
+	}
+	e.EncodeElement(s.Status, st("Status"))
+	e.EncodeElement("BiddableAdGroupCriterion", st("Type"))
+	e.Encode(s.CriterionBid)
+	e.EncodeToken(xml.EndElement{start.Name})
+	return nil
 }
 
 type NegativeAdGroupCriterion struct {
@@ -114,6 +145,7 @@ type AdGroupCriterionIds []int64
 
 type ApplyProductPartitionActionsResponse struct {
 	AdGroupCriterionIds AdGroupCriterionIds `xml:"AdGroupCriterionIds>long"`
+	PartialErrors       []BatchError        `xml:"PartialErrors>BatchError"`
 }
 
 func (s *AdGroupCriterionIds) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
@@ -135,7 +167,7 @@ func (s *AdGroupCriterionIds) UnmarshalXML(dec *xml.Decoder, start xml.StartElem
 	return nil
 }
 
-func (c *CampaignService) ApplyProductPartitionActions(actions []AdGroupCriterionAction) ([]int64, error) {
+func (c *CampaignService) ApplyProductPartitionActions(actions []AdGroupCriterionAction) (*ApplyProductPartitionActionsResponse, error) {
 	req := ApplyProductPartitionActionsRequest{
 		NS:               "https://bingads.microsoft.com/CampaignManagement/v11",
 		CriterionActions: actions,
@@ -146,9 +178,9 @@ func (c *CampaignService) ApplyProductPartitionActions(actions []AdGroupCriterio
 		return nil, err
 	}
 
-	ret := ApplyProductPartitionActionsResponse{}
-	err = xml.Unmarshal(resp, &ret)
-	return ret.AdGroupCriterionIds, err
+	ret := &ApplyProductPartitionActionsResponse{}
+	err = xml.Unmarshal(resp, ret)
+	return ret, err
 
 }
 

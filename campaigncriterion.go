@@ -76,9 +76,19 @@ type Multiplier struct {
 	Multiplier float64
 }
 type CriterionBid struct {
-	Type     string
-	TypeAttr string `xml:"i:type,attr"`
-	Amount   float64
+	Type   string
+	Amount float64
+}
+
+func (s CriterionBid) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	start.Attr = []xml.Attr{xml.Attr{Name: xml.Name{Local: "i:type"}, Value: "FixedBid"}}
+	e.EncodeToken(start)
+
+	e.EncodeElement("FixedBid", st("Type"))
+	e.EncodeElement(s.Amount, st("Amount"))
+
+	e.EncodeToken(xml.EndElement{start.Name})
+	return nil
 }
 
 func (c *CampaignService) AddCampaignCriterions(t CriterionType, cs []CampaignCriterion) ([]int64, error) {
