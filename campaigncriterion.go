@@ -81,7 +81,7 @@ func (c *CampaignService) AddCampaignCriterions(t CriterionType, cs []CampaignCr
 		CampaignCriterions: cs,
 	}
 
-	resp, err := c.client.SendRequest(req, c.endpoint, "AddCampaignCriterions")
+	resp, err := c.Client.SendRequest(req, c.Endpoint, "AddCampaignCriterions")
 
 	if err != nil {
 		return nil, err
@@ -110,7 +110,7 @@ func (c *CampaignService) GetCampaignCriterionsByIds(campaign int64) ([]Campaign
 		CriterionType: ProductScope,
 	}
 
-	resp, err := c.client.SendRequest(req, c.endpoint, "GetCampaignCriterionsByIds")
+	resp, err := c.Client.SendRequest(req, c.Endpoint, "GetCampaignCriterionsByIds")
 
 	if err != nil {
 		return nil, err

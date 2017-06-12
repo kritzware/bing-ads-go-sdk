@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strings"
 )
 
@@ -105,6 +106,8 @@ func (f *ErrorsType) Error() string {
 	return strings.Join(errors, "\n")
 }
 
+var debug = os.Getenv("BING_SDK_DEBUG")
+
 func (b *Session) SendRequest(body interface{}, endpoint string, soapAction string) ([]byte, error) {
 	envelope := RequestEnvelope{
 		EnvNS: "http://www.w3.org/2001/XMLSchema-instance",
@@ -150,7 +153,9 @@ func (b *Session) SendRequest(body interface{}, endpoint string, soapAction stri
 		return nil, err
 	}
 
-	fmt.Println(string(req))
+	if debug != "" {
+		fmt.Println(string(req))
+	}
 	//fmt.Println(string(raw))
 
 	res := SoapResponseEnvelope{}
@@ -160,9 +165,11 @@ func (b *Session) SendRequest(body interface{}, endpoint string, soapAction stri
 		return nil, err
 	}
 
-	fmt.Println(">>>")
-	fmt.Println(string(res.Body.OperationResponse))
-	fmt.Println(">>>")
+	if debug != "" {
+		fmt.Println(">>>")
+		fmt.Println(string(res.Body.OperationResponse))
+		fmt.Println(">>>")
+	}
 
 	switch response.StatusCode {
 	case 400, 401, 403, 405, 500:

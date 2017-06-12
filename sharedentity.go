@@ -54,7 +54,7 @@ func (c *CampaignService) GetSharedEntitiesByAccountId(entityType string) ([]Neg
 		NS:               "https://bingads.microsoft.com/CampaignManagement/v11",
 		SharedEntityType: "NegativeKeywordList",
 	}
-	resp, err := c.client.SendRequest(req, c.endpoint, "GetSharedEntitiesByAccountId")
+	resp, err := c.Client.SendRequest(req, c.Endpoint, "GetSharedEntitiesByAccountId")
 
 	if err != nil {
 		return nil, err
@@ -111,7 +111,7 @@ func (c *CampaignService) GetListItemsBySharedList(list NegativeKeywordList) ([]
 		NS:         "https://bingads.microsoft.com/CampaignManagement/v11",
 		SharedList: list,
 	}
-	resp, err := c.client.SendRequest(req, c.endpoint, "GetListItemsBySharedList")
+	resp, err := c.Client.SendRequest(req, c.Endpoint, "GetListItemsBySharedList")
 
 	if err != nil {
 		return nil, err
@@ -145,7 +145,7 @@ func (c *CampaignService) AddSharedEntity(entity *NegativeKeywordList, items []N
 		SharedEntity: entity,
 		ListItems:    items,
 	}
-	resp, err := c.client.SendRequest(req, c.endpoint, "AddSharedEntity")
+	resp, err := c.Client.SendRequest(req, c.Endpoint, "AddSharedEntity")
 
 	if err != nil {
 		return nil, err
@@ -181,7 +181,7 @@ func (c *CampaignService) DeleteSharedEntities(list []NegativeKeywordList) ([]Ba
 		NS:             "https://bingads.microsoft.com/CampaignManagement/v11",
 		SharedEntities: list,
 	}
-	res, err := c.client.SendRequest(req, c.endpoint, "DeleteSharedEntities")
+	res, err := c.Client.SendRequest(req, c.Endpoint, "DeleteSharedEntities")
 	if err != nil {
 		return nil, err
 	}
@@ -214,7 +214,7 @@ func (c *CampaignService) SetSharedEntityAssociations(associations []SharedEntit
 		NS:           "https://bingads.microsoft.com/CampaignManagement/v11",
 		Associations: associations,
 	}
-	_, err := c.client.SendRequest(req, c.endpoint, "SetSharedEntityAssociations")
+	_, err := c.Client.SendRequest(req, c.Endpoint, "SetSharedEntityAssociations")
 
 	return err
 }
@@ -252,7 +252,7 @@ func (c *CampaignService) GetSharedEntityAssociationsBySharedEntityIds(ids []int
 		SharedEntityType: "NegativeKeywordList",
 		SharedEntityIds:  SharedEntityIds(ids),
 	}
-	res, err := c.client.SendRequest(req, c.endpoint, "GetSharedEntityAssociationsBySharedEntityIds")
+	res, err := c.Client.SendRequest(req, c.Endpoint, "GetSharedEntityAssociationsBySharedEntityIds")
 	if err != nil {
 		return nil, err
 	}
@@ -293,7 +293,7 @@ func (c *CampaignService) GetSharedEntityAssociationsByEntityIds(ids []int64) (*
 		SharedEntityType: "NegativeKeywordList",
 		EntityIds:        ids,
 	}
-	res, err := c.client.SendRequest(req, c.endpoint, "GetSharedEntityAssociationsByEntityIds")
+	res, err := c.Client.SendRequest(req, c.Endpoint, "GetSharedEntityAssociationsByEntityIds")
 	if err != nil {
 		return nil, err
 	}
@@ -318,7 +318,7 @@ func (c *CampaignService) DeleteSharedEntityAssociations(list []SharedEntityAsso
 		NS:           "https://bingads.microsoft.com/CampaignManagement/v11",
 		Associations: list,
 	}
-	res, err := c.client.SendRequest(req, c.endpoint, "DeleteSharedEntityAssociations")
+	res, err := c.Client.SendRequest(req, c.Endpoint, "DeleteSharedEntityAssociations")
 	if err != nil {
 		return nil, err
 	}
@@ -346,7 +346,7 @@ func (c *CampaignService) AddListItemsToSharedList(list *NegativeKeywordList, it
 		SharedList: list,
 		ListItems:  items,
 	}
-	res, err := c.client.SendRequest(req, c.endpoint, "AddListItemsToSharedList")
+	res, err := c.Client.SendRequest(req, c.Endpoint, "AddListItemsToSharedList")
 	if err != nil {
 		return nil, err
 	}

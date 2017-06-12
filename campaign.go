@@ -62,18 +62,15 @@ const (
 	DynamicSearchAds CampaignType = "DynamicSearchAds"
 )
 
-type GetCampaignsByIdsResponse struct {
-}
-
 type CampaignService struct {
-	endpoint string
-	client   Client
+	Endpoint string
+	Client   Client
 }
 
 func NewCampaignService(client *Session) *CampaignService {
 	return &CampaignService{
-		endpoint: "https://campaign.api.bingads.microsoft.com/Api/Advertiser/CampaignManagement/v11/CampaignManagementService.svc",
-		client:   client,
+		Endpoint: "https://campaign.api.bingads.microsoft.com/Api/Advertiser/CampaignManagement/v11/CampaignManagementService.svc",
+		Client:   client,
 	}
 }
 
@@ -95,7 +92,7 @@ func (c *CampaignService) GetCampaignsByAccountId(account int64, campaignType Ca
 		AccountId:    account,
 	}
 
-	resp, err := c.client.SendRequest(req, c.endpoint, "GetCampaignsByAccountId")
+	resp, err := c.Client.SendRequest(req, c.Endpoint, "GetCampaignsByAccountId")
 
 	if err != nil {
 		return nil, err
@@ -114,7 +111,7 @@ func (c *CampaignService) AddCampaigns(account int64, campaigns []Campaign) ([]i
 		AccountId: account,
 	}
 
-	resp, err := c.client.SendRequest(req, c.endpoint, "AddCampaigns")
+	resp, err := c.Client.SendRequest(req, c.Endpoint, "AddCampaigns")
 
 	if err != nil {
 		return nil, err
