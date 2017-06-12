@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"reflect"
+	"strconv"
 	"testing"
 )
 
@@ -345,7 +346,12 @@ func TestAddCampaigns(t *testing.T) {
 		}},
 	}}
 
-	ids, err := svc.AddCampaigns(os.Getenv("BING_ACCOUNT_ID"), toadd)
+	accountid, err := strconv.ParseInt(os.Getenv("BING_ACCOUNT_ID"), 10, 64)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+	ids, err := svc.AddCampaigns(accountid, toadd)
 
 	if err != nil {
 		t.Error(err)
@@ -365,7 +371,13 @@ func TestUnmarshalCampaigns(t *testing.T) {
 		client:   client,
 	}
 	//svc = getTestClient()
-	res, err := svc.GetCampaignsByAccountId(os.Getenv("BING_ACCOUNT_ID"), Shopping)
+
+	accountid, err := strconv.ParseInt(os.Getenv("BING_ACCOUNT_ID"), 10, 64)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+	res, err := svc.GetCampaignsByAccountId(accountid, Shopping)
 
 	if err != nil {
 		t.Fatal(err)
