@@ -73,7 +73,7 @@ func (c *CampaignService) GetSharedEntitiesByAccountId(entityType string) ([]Neg
 type GetListItemsBySharedListRequest struct {
 	XMLName    xml.Name `xml:"GetListItemsBySharedListRequest"`
 	NS         string   `xml:"xmlns,attr"`
-	SharedList NegativeKeywordList
+	SharedList *NegativeKeywordList
 }
 
 type GetListItemsBySharedListResponse struct {
@@ -106,7 +106,7 @@ func (s *NegativeKeyword) MarshalXML(e *xml.Encoder, start xml.StartElement) err
 	return nil
 }
 
-func (c *CampaignService) GetListItemsBySharedList(list NegativeKeywordList) ([]NegativeKeyword, error) {
+func (c *CampaignService) GetListItemsBySharedList(list *NegativeKeywordList) ([]NegativeKeyword, error) {
 	req := GetListItemsBySharedListRequest{
 		NS:         "https://bingads.microsoft.com/CampaignManagement/v11",
 		SharedList: list,

@@ -30,7 +30,7 @@ func (s *CampaignCriterion) MarshalXML(e *xml.Encoder, start xml.StartElement) e
 	return nil
 }
 
-//FIXME: make Id nullable int?
+//TODO: write marshal fns
 type CampaignCriterion struct {
 	TypeAttr                string `xml:"i:type,attr"`
 	CampaignId              int64
