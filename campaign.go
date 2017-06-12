@@ -4,12 +4,18 @@ import (
 	"encoding/xml"
 )
 
-type BiddingScheme struct {
-	Type     string
-	TypeAttr string `xml:"i:type,attr"`
-}
+const (
+	ManualCpc BiddingScheme = "ManualCpcBiddingScheme"
+)
 
-var ManualCpc = BiddingScheme{Type: "ManualCpc", TypeAttr: "ManualCpcBiddingScheme"}
+type BiddingScheme string
+
+func (s BiddingScheme) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	start.Attr = ats("i:type", string(s))
+	e.EncodeElement(string(s), st("Type"))
+	e.EncodeToken(xml.EndElement{start.Name})
+	return nil
+}
 
 type Campaign struct {
 	BiddingScheme BiddingScheme `xml:"BiddingScheme"`

@@ -268,7 +268,7 @@ func TestAddAdGroupSandbox(t *testing.T) {
 			Language:       "English",
 			Network:        "OwnedAndOperatedOnly",
 			AdDistribution: "Search",
-			BiddingScheme:  &BiddingScheme{"ManualCpcBiddingScheme", "ManualCpcBiddingScheme"},
+			BiddingScheme:  BiddingScheme("ManualCpcBiddingScheme"),
 		},
 	}
 
@@ -372,7 +372,7 @@ func TestUnmarshalCampaigns(t *testing.T) {
 	}
 
 	expected := []Campaign{{
-		BiddingScheme: BiddingScheme{Type: "ManualCpc"},
+		BiddingScheme: BiddingScheme("ManualCpc"),
 		BudgetType:    "DailyBudgetStandard",
 		DailyBudget:   25,
 		Description:   "dota2",

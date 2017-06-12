@@ -24,7 +24,7 @@ type AdGroup struct {
 	Status                      string `xml:",omitempty"`
 	StartDate                   *Date
 	EndDate                     *Date
-	BiddingScheme               *BiddingScheme
+	BiddingScheme               BiddingScheme
 	NativeBidAdjustment         string `xml:",omitempty"`
 	Network                     string `xml:",omitempty"`
 	PricingModel                string `xml:",omitempty"`
