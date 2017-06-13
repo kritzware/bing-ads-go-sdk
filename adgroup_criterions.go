@@ -76,17 +76,27 @@ type BiddableAdGroupCriterion struct {
 	CriterionBid CriterionBid
 }
 
+//FIXME: maybe switch to pointers
 func (s BiddableAdGroupCriterion) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	start.Attr = []xml.Attr{xml.Attr{Name: xml.Name{Local: "i:type"}, Value: "BiddableAdGroupCriterion"}}
 	e.EncodeToken(start)
 	e.EncodeElement(s.AdGroupId, st("AdGroupId"))
-	e.Encode(s.Criterion)
+
+	if s.Criterion != (Criterion{}) {
+		e.Encode(s.Criterion)
+	}
+
 	if s.Id != 0 {
 		e.EncodeElement(s.Id, st("Id"))
 	}
-	e.EncodeElement(s.Status, st("Status"))
+
+	if s.Status != "" {
+		e.EncodeElement(s.Status, st("Status"))
+	}
 	e.EncodeElement("BiddableAdGroupCriterion", st("Type"))
-	e.Encode(s.CriterionBid)
+	if s.CriterionBid != (CriterionBid{}) {
+		e.Encode(s.CriterionBid)
+	}
 	e.EncodeToken(xml.EndElement{start.Name})
 	return nil
 }
@@ -131,6 +141,7 @@ func (c *CampaignService) GetAdGroupCriterionsByIds(adgroup int64) ([]BiddableAd
 
 }
 
+//Action :: Add | Delete | Update
 type AdGroupCriterionAction struct {
 	Action           string
 	AdGroupCriterion BiddableAdGroupCriterion
@@ -169,6 +180,7 @@ func (s *Longs) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
 	return nil
 }
 
+//TODO: should we handle mapping successful ids to actions
 func (c *CampaignService) ApplyProductPartitionActions(actions []AdGroupCriterionAction) (*ApplyProductPartitionActionsResponse, error) {
 	req := ApplyProductPartitionActionsRequest{
 		NS:               "https://bingads.microsoft.com/CampaignManagement/v11",

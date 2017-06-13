@@ -134,30 +134,51 @@ func TestUnmarshalResponse(t *testing.T) {
 }
 
 func TestSandboxApplyProductPartitionActions(t *testing.T) {
-
-	/*
-				[
-		{4576098675327012 1159984767305062 {ProductPartition  []  Subdivision} Active BiddableAdGroupCriterion {  0}}
-		{4576098675327014 1159984767305062 {ProductPartition  [] 4576098675327012 Unit}
-		Active BiddableAdGroupCriterion {FixedBid  1}}
-		{4576098675327015 1159984767305062 {ProductPartition  [] 4576098675327012 Unit}
-		Active BiddableAdGroupCriterion {FixedBid  1}}
-		{4576098675327016 1159984767305062 {ProductPartition  [] 4576098675327012 Unit} Active BiddableAdGroupCriterion {FixedBid  1}}
-		{4576098675327036 1159984767305062 {ProductPartition  [] 4576098675327012 Subdivision} Active BiddableAdGroupCriterion {  0}}
-		{4576098675327037 1159984767305062 {ProductPartition  [] 4576098675327036 Unit} Active BiddableAdGroupCriterion {FixedBid  0.5}}
-		{4576098675327038 1159984767305062 {ProductPartition  [] 4576098675327036 Unit} Active BiddableAdGroupCriterion {FixedBid  0.35}}
-		{4576098675327039 1159984767305062 {ProductPartition  [] 4576098675327036 Unit} Active BiddableAdGroupCriterion {FixedBid  1}}]
-	*/
 	svc := getTestClient()
 
-	res, err := svc.GetAdGroupCriterionsByIds(1167681348701053)
+	existing, err := svc.GetAdGroupCriterionsByIds(1167681348701053)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	fmt.Println(res)
+	if len(existing) == 0 {
+		t.Fatalf("expected all products root group to exist")
+	}
 
-	parentid := fmt.Sprintf("%d", res[0].Id)
+	fmt.Println(existing)
+
+	parentid := fmt.Sprintf("%d", existing[0].Id)
+
+	tomodifyid, err := func() (int64, error) {
+		for _, e := range existing {
+			if e.Criterion.Condition.Attribute == "str" {
+				return e.Id, nil
+			}
+		}
+		return 0, fmt.Errorf("expected existing str partition")
+	}()
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cleanup := func(id int64) {
+		toremove := BiddableAdGroupCriterion{
+			AdGroupId: 1167681348701053,
+			Id:        id,
+		}
+
+		actions := []AdGroupCriterionAction{{"Delete", toremove}}
+		res, err := svc.ApplyProductPartitionActions(actions)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if len(res.AdGroupCriterionIds) != 1 {
+			t.Fatalf("expected 1 delete, got %d", len(res.AdGroupCriterionIds))
+		}
+	}
 
 	a := BiddableAdGroupCriterion{
 		AdGroupId: 1167681348701053,
@@ -172,48 +193,66 @@ func TestSandboxApplyProductPartitionActions(t *testing.T) {
 		},
 	}
 
+	b := BiddableAdGroupCriterion{
+		AdGroupId: 1159984767306214,
+		Criterion: Criterion{
+			Condition:         ProductCondition{"str", "ProductType1"},
+			ParentCriterionId: parentid,
+			PartitionType:     "Unit",
+		},
+		Status: "Active",
+		CriterionBid: CriterionBid{
+			Amount: 0.35,
+		},
+	}
+
+	c := BiddableAdGroupCriterion{
+		AdGroupId: 1167681348701053,
+		Id:        tomodifyid,
+		Criterion: Criterion{
+			Condition:         ProductCondition{"str", "ProductType1"},
+			ParentCriterionId: parentid,
+			PartitionType:     "Unit",
+		},
+		Status: "Active",
+		CriterionBid: CriterionBid{
+			Amount: 0.35,
+		},
+	}
+
+	expectedPartialFailures := map[int]bool{
+		0: true,
+		2: true,
+	}
+
 	actions := []AdGroupCriterionAction{
+		{"Add", b},
 		{"Add", a},
+		{"Add", b},
+		{"Update", c},
 	}
 
-	res2, err := svc.ApplyProductPartitionActions(actions)
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if len(res2.AdGroupCriterionIds) != 1 {
-		t.Fatalf("expected 1 created, got %d", len(res2.AdGroupCriterionIds))
-	}
-
-	a.Id = res2.AdGroupCriterionIds[0]
-
-	actions = []AdGroupCriterionAction{{"Delete", a}}
-
-	/*
-		for _, part := range res {
-			if part.Criterion.ParentCriterionId == "" {
-				continue
-			}
-
-			if part.Criterion.Condition.Attribute == "" {
-				continue
-			}
-			actions = append(actions, AdGroupCriterionAction{"Delete", part})
-		}
-	*/
-
-	res2, err = svc.ApplyProductPartitionActions(actions)
-
-	if len(res2.AdGroupCriterionIds) != 1 {
-		t.Errorf("expected 1 delete, got %d", len(res2.AdGroupCriterionIds))
-	}
+	applied, err := svc.ApplyProductPartitionActions(actions)
 
 	if err != nil {
 		t.Error(err)
 	}
 
-	fmt.Println(res2)
+	fmt.Println(applied)
+
+	expectedSuccessful := len(actions) - len(expectedPartialFailures)
+
+	if len(applied.AdGroupCriterionIds) != expectedSuccessful {
+		t.Errorf("expected %d created, got %d", expectedSuccessful, len(applied.AdGroupCriterionIds))
+	}
+
+	for _, failure := range applied.PartialErrors {
+		if !expectedPartialFailures[failure.Index] {
+			t.Errorf("unexpected partial failure at index %d", failure.Index)
+		}
+	}
+
+	cleanup(applied.AdGroupCriterionIds[0])
 }
 
 func TestUnmarshalCampaignScope(t *testing.T) {
