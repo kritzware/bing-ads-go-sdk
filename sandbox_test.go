@@ -162,6 +162,15 @@ func TestSandboxApplyProductPartitionActions(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	todelete, _ := func() (int64, error) {
+		for _, e := range existing {
+			if e.Criterion.Condition.Attribute == "int" {
+				return e.Id, nil
+			}
+		}
+		return 0, fmt.Errorf("expected existing str partition")
+	}()
+
 	cleanup := func(id int64) {
 		toremove := BiddableAdGroupCriterion{
 			AdGroupId: 1167681348701053,
@@ -175,14 +184,19 @@ func TestSandboxApplyProductPartitionActions(t *testing.T) {
 			t.Fatal(err)
 		}
 
+		fmt.Println(res)
 		if len(res.AdGroupCriterionIds) != 1 {
 			t.Fatalf("expected 1 delete, got %d", len(res.AdGroupCriterionIds))
 		}
 	}
 
+	if todelete != 0 {
+		cleanup(todelete)
+	}
+
 	a := BiddableAdGroupCriterion{
 		AdGroupId: 1167681348701053,
-		Criterion: Criterion{
+		Criterion: ProductPartition{
 			Condition:         ProductCondition{"int", "ProductType1"},
 			ParentCriterionId: parentid,
 			PartitionType:     "Unit",
@@ -195,7 +209,7 @@ func TestSandboxApplyProductPartitionActions(t *testing.T) {
 
 	b := BiddableAdGroupCriterion{
 		AdGroupId: 1159984767306214,
-		Criterion: Criterion{
+		Criterion: ProductPartition{
 			Condition:         ProductCondition{"str", "ProductType1"},
 			ParentCriterionId: parentid,
 			PartitionType:     "Unit",
@@ -209,7 +223,7 @@ func TestSandboxApplyProductPartitionActions(t *testing.T) {
 	c := BiddableAdGroupCriterion{
 		AdGroupId: 1167681348701053,
 		Id:        tomodifyid,
-		Criterion: Criterion{
+		Criterion: ProductPartition{
 			Condition:         ProductCondition{"str", "ProductType1"},
 			ParentCriterionId: parentid,
 			PartitionType:     "Unit",
@@ -271,9 +285,9 @@ func TestUnmarshalCampaignScope(t *testing.T) {
 		CampaignId: 283025743,
 		Type:       "BiddableCampaignCriterion",
 		Id:         840001008,
-		Criterion: Criterion{
-			Type:      ProductScope,
-			Condition: ProductCondition{"top_brand", "CustomLabel0"},
+		Criterion: ProductScope{
+			Type:       "ProductScope",
+			Conditions: []ProductCondition{{"top_brand", "CustomLabel0"}},
 		},
 	}}
 
@@ -321,40 +335,42 @@ func TestAddAdGroupSandbox(t *testing.T) {
 	fmt.Println(res)
 }
 
-func TestAddCampaignCriterions(t *testing.T) {
+func TestSandboxAddCampaignCriterions(t *testing.T) {
 	svc := getTestClient()
-
 	/*
-		camps, err := svc.GetCampaignsByAccountId(os.Getenv("BING_ACCOUNT_ID"), Shopping)
+		account, _ := strconv.ParseInt(os.Getenv("BING_ACCOUNT_ID"), 10, 64)
+		camps, err := svc.GetCampaignsByAccountId(account, Shopping)
 
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		fmt.Println(camps)
-
-		crits, err := svc.GetCampaignCriterionsByIds(804004280)
-
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		fmt.Println(crits)
 	*/
 
+	crits, err := svc.GetCampaignCriterionsByIds(804004280)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fmt.Println("criterions:", crits)
+
 	cs := []CampaignCriterion{
-		{
+		CampaignCriterion{
 			Type:       "BiddableCampaignCriterion",
 			CampaignId: 804004280,
-			Nil:        "true",
-			Criterion: Criterion{
-				Type:      "ProductScope",
-				Condition: ProductCondition{"top_brand", "CustomLabel0"},
+			Criterion: ProductScope{
+				Type:       "ProductScope",
+				Conditions: []ProductCondition{{"valve", "Brand"}},
+				//	PartitionType: "Subdivision",
 			},
+			CriterionBid: CriterionBid{"FixedBid", 0.03},
+			Status:       "Active",
 		},
 	}
 
-	res, err := svc.AddCampaignCriterions(ProductScope, cs)
+	res, err := svc.AddCampaignCriterions("ProductScope", cs)
 
 	if err != nil {
 		t.Error(err)
@@ -378,7 +394,6 @@ func TestAddCampaigns(t *testing.T) {
 		CampaignType:  Shopping,
 		Settings: []CampaignSettings{{
 			Type:             "ShoppingSetting",
-			TypeAttr:         "ShoppingSetting",
 			Priority:         0,
 			SalesCountryCode: "US",
 			StoreId:          1397151,

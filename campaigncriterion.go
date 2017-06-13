@@ -4,7 +4,7 @@ import (
 	"encoding/xml"
 )
 
-func (s *CampaignCriterion) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+func (s CampaignCriterion) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	start.Attr = []xml.Attr{xml.Attr{Name: xml.Name{Local: "i:type"}, Value: s.Type}}
 	e.EncodeToken(start)
 	/*
@@ -18,7 +18,6 @@ func (s *CampaignCriterion) MarshalXML(e *xml.Encoder, start xml.StartElement) e
 
 	e.EncodeElement(s.CampaignId, st("CampaignId"))
 	e.Encode(s.Criterion)
-	e.Encode(s.Type)
 
 	if s.Id == 0 {
 		e.EncodeElement("", st("Id", "i:nil", "true"))
@@ -26,22 +25,22 @@ func (s *CampaignCriterion) MarshalXML(e *xml.Encoder, start xml.StartElement) e
 		e.EncodeElement(s.Id, st("Id"))
 	}
 
+	e.EncodeElement(s.Status, st("Status"))
+	e.EncodeElement(s.Type, st("Type"))
+	e.Encode(s.CriterionBid)
+	//marshalCriterion(s.Criterion, e)
+
 	e.EncodeToken(xml.EndElement{start.Name})
 	return nil
 }
 
-//TODO: write marshal fns
 type CampaignCriterion struct {
-	TypeAttr                string `xml:"i:type,attr"`
-	CampaignId              int64
-	Criterion               Criterion
-	Id                      int64
-	Nil                     string          `xml:"i:nil,attr"`
-	Status                  CriterionStatus `xml:",omitempty"`
-	Type                    string          `xml:",omitempty"`
-	ForwardCompatibilityMap []string
-
-	//	CriterionBid
+	CampaignId   int64
+	Criterion    ProductScope
+	Id           int64
+	Status       CriterionStatus `xml:",omitempty"`
+	Type         string          `xml:",omitempty"`
+	CriterionBid CriterionBid
 }
 
 type CriterionStatus string
@@ -74,7 +73,7 @@ func (s CriterionBid) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	return nil
 }
 
-func (c *CampaignService) AddCampaignCriterions(t CriterionType, cs []CampaignCriterion) ([]int64, error) {
+func (c *CampaignService) AddCampaignCriterions(t string, cs []CampaignCriterion) ([]int64, error) {
 	req := AddCampaignCriterionsRequest{
 		NS:                 "https://bingads.microsoft.com/CampaignManagement/v11",
 		CriterionType:      t,
@@ -96,18 +95,18 @@ type AddCampaignCriterionsRequest struct {
 	XMLName            xml.Name            `xml:"AddCampaignCriterionsRequest"`
 	NS                 string              `xml:"xmlns,attr"`
 	CampaignCriterions []CampaignCriterion `xml:"CampaignCriterions>CampaignCriterion"`
-	CriterionType      CriterionType
+	CriterionType      string
 }
 
 type AddCampaignCriterionsResponse struct {
-	CampaignCriterionIds []int64 `xml:"CampaignCriterionIds>a:long"`
+	CampaignCriterionIds Longs `xml:"CampaignCriterionIds>long"`
 }
 
 func (c *CampaignService) GetCampaignCriterionsByIds(campaign int64) ([]CampaignCriterion, error) {
 	req := GetCampaignCriterionsByIdsRequest{
 		NS:            "https://bingads.microsoft.com/CampaignManagement/v11",
 		CampaignId:    campaign,
-		CriterionType: ProductScope,
+		CriterionType: "ProductScope",
 	}
 
 	resp, err := c.Client.SendRequest(req, c.Endpoint, "GetCampaignCriterionsByIds")
@@ -122,10 +121,10 @@ func (c *CampaignService) GetCampaignCriterionsByIds(campaign int64) ([]Campaign
 }
 
 type GetCampaignCriterionsByIdsRequest struct {
-	XMLName       xml.Name      `xml:"GetCampaignCriterionsByIdsRequest"`
-	CampaignId    int64         `xml:"CampaignId"`
-	CriterionType CriterionType `xml:"CriterionType"`
-	NS            string        `xml:"xmlns,attr"`
+	XMLName       xml.Name `xml:"GetCampaignCriterionsByIdsRequest"`
+	CampaignId    int64    `xml:"CampaignId"`
+	CriterionType string   `xml:"CriterionType"`
+	NS            string   `xml:"xmlns,attr"`
 }
 
 type GetCampaignCriterionsByIdsResponse struct {

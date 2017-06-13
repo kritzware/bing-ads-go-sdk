@@ -13,15 +13,39 @@ type ProductCondition struct {
 
 //TODO: derived types
 //https://msdn.microsoft.com/en-us/library/bing-ads-campaign-management-getcampaigncriterionsbyids.aspx
-type Criterion struct {
+type ProductPartition struct {
 	Type      string
-	Condition ProductCondition //`xml:"Conditions>ProductCondition"`
+	Condition ProductCondition
 	//should be nullable int64
 	ParentCriterionId string `xml:",omitempty"`
 	PartitionType     string `xml:",omitempty"`
 }
 
-func (s Criterion) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+type ProductScope struct {
+	Type       string
+	Conditions []ProductCondition `xml:"Conditions>ProductCondition"`
+}
+
+func (s ProductScope) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	start.Name.Local = "Criterion"
+	start.Attr = ats("i:type", "ProductScope")
+	e.EncodeToken(start)
+	e.EncodeElement("ProductScope", st("Type"))
+
+	e.EncodeToken(st("Conditions"))
+
+	for _, x := range s.Conditions {
+		e.EncodeElement(x, st("ProductCondition"))
+	}
+
+	e.EncodeToken(xml.EndElement{xml.Name{Local: "Conditions"}})
+
+	e.EncodeToken(xml.EndElement{start.Name})
+	return nil
+}
+
+func (s ProductPartition) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	start.Name.Local = "Criterion"
 	start.Attr = ats("i:type", "ProductPartition")
 	e.EncodeToken(start)
 	e.EncodeElement("ProductPartition", st("Type"))
@@ -30,6 +54,8 @@ func (s Criterion) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 
 	if s.ParentCriterionId != "" {
 		e.EncodeElement(s.ParentCriterionId, st("ParentCriterionId"))
+	} else {
+		e.EncodeElement("", st("ParentCriterionId", "i:nil", "true"))
 	}
 
 	if s.PartitionType != "" {
@@ -40,36 +66,44 @@ func (s Criterion) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	return nil
 }
 
-type CriterionType string
-
-const (
-	ProductPartition CriterionType = "ProductPartition"
-	ProductScope                   = "ProductScope"
-)
-
 type GetAdGroupCriterionsByIdsRequest struct {
 	XMLName xml.Name `xml:"GetAdGroupCriterionsByIdsRequest"`
 
-	NS            string        `xml:"xmlns,attr"`
-	AdGroupId     int64         `xml:"AdGroupId"`
-	CriterionType CriterionType `xml:"CriterionType"`
+	NS            string `xml:"xmlns,attr"`
+	AdGroupId     int64  `xml:"AdGroupId"`
+	CriterionType string `xml:"CriterionType"`
 }
 
 type GetAdGroupCriterionsByIdsResponse struct {
 	AdGroupCriterions []BiddableAdGroupCriterion `xml:"https://bingads.microsoft.com/CampaignManagement/v11 AdGroupCriterions>AdGroupCriterion"`
 }
 
+/*
 type AdGroupCriterion struct {
 	Id           int64 `xml:",omitempty"`
 	AdGroupId    int64
-	Criterion    Criterion
+	Criterion    ProductPartition
 	Status       CriterionStatus
 	Type         string
 	CriterionBid CriterionBid
 }
+*/
+/*
+func marshalCriterion(c Criterion, e *xml.Encoder) error {
+	switch c.(type) {
+	case ProductPartition:
+		return e.Encode(c)
+	case ProductScope:
+		return e.Encode(c)
+	}
+
+	return fmt.Errorf("unknown criterion type")
+}
+*/
+
 type BiddableAdGroupCriterion struct {
 	AdGroupId    int64
-	Criterion    Criterion
+	Criterion    ProductPartition
 	Id           int64 `xml:",omitempty"`
 	Status       string
 	Type         string
@@ -82,8 +116,9 @@ func (s BiddableAdGroupCriterion) MarshalXML(e *xml.Encoder, start xml.StartElem
 	e.EncodeToken(start)
 	e.EncodeElement(s.AdGroupId, st("AdGroupId"))
 
-	if s.Criterion != (Criterion{}) {
+	if s.Criterion != (ProductPartition{}) {
 		e.Encode(s.Criterion)
+		//marshalCriterion(s.Criterion, e)
 	}
 
 	if s.Id != 0 {
@@ -101,10 +136,12 @@ func (s BiddableAdGroupCriterion) MarshalXML(e *xml.Encoder, start xml.StartElem
 	return nil
 }
 
+//func (s BiddableAdGroupCriterion) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error { }
+
 type NegativeAdGroupCriterion struct {
 	Id        int64
 	AdGroupId int64
-	Criterion Criterion
+	Criterion ProductPartition
 	Status    CriterionStatus
 	Type      string
 }
@@ -121,7 +158,7 @@ const (
 func (c *CampaignService) GetAdGroupCriterionsByIds(adgroup int64) ([]BiddableAdGroupCriterion, error) {
 	req := GetAdGroupCriterionsByIdsRequest{
 		AdGroupId:     adgroup,
-		CriterionType: ProductPartition,
+		CriterionType: "ProductPartition",
 		NS:            "https://bingads.microsoft.com/CampaignManagement/v11",
 	}
 	resp, err := c.Client.SendRequest(req, c.Endpoint, "GetAdGroupCriterionsByIds")
@@ -162,6 +199,7 @@ type ApplyProductPartitionActionsResponse struct {
 }
 
 func (s *Longs) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
+	open := false
 	for token, err := dec.Token(); err == nil; token, err = dec.Token() {
 		if err != nil {
 			return err
@@ -174,6 +212,12 @@ func (s *Longs) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
 				return err
 			}
 			*s = append(*s, i)
+			open = true
+		case xml.EndElement:
+			if open == false {
+				//*s = append(*s, -1)
+			}
+			open = false
 		}
 	}
 

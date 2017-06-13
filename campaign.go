@@ -33,12 +33,15 @@ type Campaign struct {
 	Settings     []CampaignSettings `xml:"Settings>Setting"`
 }
 
-//TODO: split into shoppingsetting + dynamicsearachadssetting
-//TODO: write marshaller, get rid of typeattr
+func (s CampaignSettings) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	start.Attr = ats("i:type", s.Type)
+	return e.EncodeElement(s, start)
+}
 
+//TODO: split into shoppingsetting + dynamicsearachadssetting
+//SalesCountryCode: US
 type CampaignSettings struct {
-	Type     string
-	TypeAttr string `xml:"i:type,attr"`
+	Type string
 
 	LocalInventoryAdsEnabled string `xml:",omitempty"`
 	Priority                 int
@@ -107,8 +110,7 @@ func (c *CampaignService) GetCampaignsByAccountId(account int64, campaignType Ca
 	return campaignResponse.Campaigns, err
 }
 
-//TODO:partial failures
-func (c *CampaignService) AddCampaigns(account int64, campaigns []Campaign) ([]int64, error) {
+func (c *CampaignService) AddCampaigns(account int64, campaigns []Campaign) (*AddCampaignsResponse, error) {
 	req := AddCampaignsRequest{
 		NS:        "https://bingads.microsoft.com/CampaignManagement/v11",
 		Campaigns: campaigns,
@@ -121,9 +123,9 @@ func (c *CampaignService) AddCampaigns(account int64, campaigns []Campaign) ([]i
 		return nil, err
 	}
 
-	ret := AddCampaignsResponse{}
-	err = xml.Unmarshal(resp, &ret)
-	return ret.CampaignIds, err
+	ret := &AddCampaignsResponse{}
+	err = xml.Unmarshal(resp, ret)
+	return ret, err
 }
 
 type AddCampaignsRequest struct {
@@ -133,6 +135,6 @@ type AddCampaignsRequest struct {
 	Campaigns []Campaign `xml:"Campaigns>Campaign"`
 }
 type AddCampaignsResponse struct {
-	CampaignIds   []int64 `xml:"CampaignIds>long"`
-	PartialErrors []BatchError
+	CampaignIds   []int64      `xml:"CampaignIds>long"`
+	PartialErrors []BatchError `xml:"PartialErrors>BatchError"`
 }
