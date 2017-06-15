@@ -2,13 +2,18 @@ package bingads
 
 import (
 	"bytes"
+	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 )
+
+var AuthenticationTokenExpired = fmt.Errorf("AuthenticationTokenExpired")
+var InvalidCredentials = fmt.Errorf("InvalidCredentials")
 
 type Client interface {
 	SendRequest(interface{}, string, string) ([]byte, error)
@@ -108,7 +113,77 @@ func (f *ErrorsType) Error() string {
 
 var debug = os.Getenv("BING_SDK_DEBUG")
 
+//TODO: lock
+func (b *Session) refresh() error {
+	q := url.Values{}
+	q.Add("client_id", b.ClientId)
+	q.Add("client_secret", b.ClientSecret)
+	q.Add("grant_type", "refresh_token")
+	q.Add("redirect_url", "https://login.live.com/oauth20_desktop.srf")
+	q.Add("refresh_token", b.RefreshToken)
+
+	req, err := http.NewRequest("POST", "https://login.live.com/oauth20_token.srf", bytes.NewBufferString(q.Encode()))
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	if err != nil {
+		return err
+	}
+
+	res, err := b.HTTPClient.Do(req)
+	if err != nil {
+		return err
+	}
+
+	defer res.Body.Close()
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return err
+	}
+
+	oauthResponse := struct {
+		TokenType           string `json:"token_type"`
+		ExpiresIn           int    `json:"expires_in"`
+		Scope               string `json:"scope"`
+		AccessToken         string `json:"access_token"`
+		AuthenticationToken string `json:"authentication_token"`
+		RefreshToken        string `json:"refresh_token"`
+		UserId              string `json:"user_id"`
+		Error               string `json:"error"`
+	}{}
+
+	if err = json.Unmarshal(body, &oauthResponse); err != nil {
+		return err
+	}
+
+	if oauthResponse.Error != "" {
+		return fmt.Errorf("error during oauth refresh: %s:", oauthResponse.Error)
+	}
+
+	b.AuthToken = oauthResponse.AccessToken
+	return nil
+}
+
 func (b *Session) SendRequest(body interface{}, endpoint string, soapAction string) ([]byte, error) {
+	var err error
+	var res []byte
+
+	for i := 0; i <= 1; i++ {
+		res, err = b.sendRequest(body, endpoint, soapAction)
+
+		switch err {
+		case AuthenticationTokenExpired, InvalidCredentials:
+			if err = b.refresh(); err != nil {
+				return res, err
+			}
+
+		default:
+			return res, err
+		}
+	}
+
+	return res, err
+}
+
+func (b *Session) sendRequest(body interface{}, endpoint string, soapAction string) ([]byte, error) {
 	envelope := RequestEnvelope{
 		EnvNS: "http://www.w3.org/2001/XMLSchema-instance",
 		EnvSS: "http://schemas.xmlsoap.org/soap/envelope/",
@@ -177,6 +252,14 @@ func (b *Session) SendRequest(body interface{}, endpoint string, soapAction stri
 		err = xml.Unmarshal(res.Body.OperationResponse, &fault)
 		if err != nil {
 			return res.Body.OperationResponse, err
+		}
+		for _, e := range fault.Detail.Errors.AdApiErrors {
+			switch e.ErrorCode {
+			case "AuthenticationTokenExpired":
+				return res.Body.OperationResponse, AuthenticationTokenExpired
+			case "InvalidCredentials":
+				return res.Body.OperationResponse, InvalidCredentials
+			}
 		}
 		return res.Body.OperationResponse, &fault.Detail.Errors //errors
 	}

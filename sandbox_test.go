@@ -24,6 +24,38 @@ func getIds(xs []NegativeKeywordList) []int64 {
 	return r
 }
 
+func TestSandboxGetSharedEntitiesForSet(t *testing.T) {
+	svc := getTestClient()
+
+	existing, err := svc.GetSharedEntitiesByAccountId("NegativeKeywordList")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fmt.Println(existing)
+
+	items, err := svc.GetListItemsBySharedList(&NegativeKeywordList{Id: existing[0].Id})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fmt.Println(items)
+
+	/*
+		ids := make([]int64, len(existing))
+		for i, x := range existing {
+			ids[i] = x.Id
+		}
+
+		ents, err := svc.GetSharedEntityAssociationsBySharedEntityIds(ids)
+		if err != nil {
+			t.Fatal(existing)
+		}
+
+		fmt.Println(ents)
+	*/
+}
+
 func TestSandboxGetSharedEntities(t *testing.T) {
 	svc := getTestClient()
 
@@ -335,19 +367,9 @@ func TestAddAdGroupSandbox(t *testing.T) {
 	fmt.Println(res)
 }
 
+//TODO: DeleteCampaignCriterions
 func TestSandboxAddCampaignCriterions(t *testing.T) {
 	svc := getTestClient()
-	/*
-		account, _ := strconv.ParseInt(os.Getenv("BING_ACCOUNT_ID"), 10, 64)
-		camps, err := svc.GetCampaignsByAccountId(account, Shopping)
-
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		fmt.Println(camps)
-	*/
-
 	crits, err := svc.GetCampaignCriterionsByIds(804004280)
 
 	if err != nil {

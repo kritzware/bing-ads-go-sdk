@@ -46,8 +46,8 @@ type RequestHeader struct {
 	CustomerAccountId   string `xml:"CustomerAccountId"`
 	CustomerId          string `xml:"CustomerId"`
 	DeveloperToken      string `xml:"DeveloperToken"`
-	Password            string `xml:"Password"`
-	Username            string `xml:"UserName"`
+	Password            string `xml:"Password,omitempty"`
+	Username            string `xml:"UserName,omitempty"`
 }
 
 type Session struct {
@@ -57,7 +57,14 @@ type Session struct {
 	AuthToken      string
 	Username       string
 	Password       string
-	HTTPClient     *http.Client
+	HTTPClient     HttpClient
+	ClientId       string
+	ClientSecret   string
+	RefreshToken   string
+}
+
+type HttpClient interface {
+	Do(*http.Request) (*http.Response, error)
 }
 
 type Config struct {
