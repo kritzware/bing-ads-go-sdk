@@ -83,7 +83,7 @@ func NewCampaignService(client *Session) *CampaignService {
 type GetCampaignsByAccountIdRequest struct {
 	XMLName      xml.Name     `xml:"GetCampaignsByAccountIdRequest"`
 	NS           string       `xml:"xmlns,attr"`
-	AccountId    int64        `xml:"AccountId"`
+	AccountId    string        `xml:"AccountId"`
 	CampaignType CampaignType `xml:"CampaignType"`
 }
 
@@ -91,7 +91,7 @@ type GetCampaignsByAccountIdResponse struct {
 	Campaigns []Campaign `xml:"Campaigns>Campaign"`
 }
 
-func (c *CampaignService) GetCampaignsByAccountId(account int64, campaignType CampaignType) ([]Campaign, error) {
+func (c *CampaignService) GetCampaignsByAccountId(account string, campaignType CampaignType) ([]Campaign, error) {
 	req := GetCampaignsByAccountIdRequest{
 		NS:           "https://bingads.microsoft.com/CampaignManagement/v11",
 		CampaignType: campaignType,
@@ -110,7 +110,7 @@ func (c *CampaignService) GetCampaignsByAccountId(account int64, campaignType Ca
 	return campaignResponse.Campaigns, err
 }
 
-func (c *CampaignService) AddCampaigns(account int64, campaigns []Campaign) (*AddCampaignsResponse, error) {
+func (c *CampaignService) AddCampaigns(account string, campaigns []Campaign) (*AddCampaignsResponse, error) {
 	req := AddCampaignsRequest{
 		NS:        "https://bingads.microsoft.com/CampaignManagement/v11",
 		Campaigns: campaigns,
@@ -131,7 +131,7 @@ func (c *CampaignService) AddCampaigns(account int64, campaigns []Campaign) (*Ad
 type AddCampaignsRequest struct {
 	XMLName   xml.Name   `xml:"AddCampaignsRequest"`
 	NS        string     `xml:"xmlns,attr"`
-	AccountId int64      `xml:"AccountId"`
+	AccountId string      `xml:"AccountId"`
 	Campaigns []Campaign `xml:"Campaigns>Campaign"`
 }
 type AddCampaignsResponse struct {
