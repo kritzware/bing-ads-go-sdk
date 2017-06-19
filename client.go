@@ -2,14 +2,15 @@ package bingads
 
 import (
 	"bytes"
-	"encoding/json"
+	"context"
 	"encoding/xml"
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"os"
 	"strings"
+
+	"golang.org/x/oauth2"
 )
 
 var AuthenticationTokenExpired = fmt.Errorf("AuthenticationTokenExpired")
@@ -113,55 +114,6 @@ func (f *ErrorsType) Error() string {
 
 var debug = os.Getenv("BING_SDK_DEBUG")
 
-//TODO: lock
-func (b *Session) refresh() error {
-	q := url.Values{}
-	q.Add("client_id", b.ClientId)
-	q.Add("client_secret", b.ClientSecret)
-	q.Add("grant_type", "refresh_token")
-	q.Add("redirect_url", "https://login.live.com/oauth20_desktop.srf")
-	q.Add("refresh_token", b.RefreshToken)
-
-	req, err := http.NewRequest("POST", "https://login.live.com/oauth20_token.srf", bytes.NewBufferString(q.Encode()))
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	if err != nil {
-		return err
-	}
-
-	res, err := b.HTTPClient.Do(req)
-	if err != nil {
-		return err
-	}
-
-	defer res.Body.Close()
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return err
-	}
-
-	oauthResponse := struct {
-		TokenType           string `json:"token_type"`
-		ExpiresIn           int    `json:"expires_in"`
-		Scope               string `json:"scope"`
-		AccessToken         string `json:"access_token"`
-		AuthenticationToken string `json:"authentication_token"`
-		RefreshToken        string `json:"refresh_token"`
-		UserId              string `json:"user_id"`
-		Error               string `json:"error"`
-	}{}
-
-	if err = json.Unmarshal(body, &oauthResponse); err != nil {
-		return err
-	}
-
-	if oauthResponse.Error != "" {
-		return fmt.Errorf("error during oauth refresh: %s:", oauthResponse.Error)
-	}
-
-	b.AuthToken = oauthResponse.AccessToken
-	return nil
-}
-
 func (b *Session) SendRequest(body interface{}, endpoint string, soapAction string) ([]byte, error) {
 	var err error
 	var res []byte
@@ -171,9 +123,6 @@ func (b *Session) SendRequest(body interface{}, endpoint string, soapAction stri
 
 		switch err {
 		case AuthenticationTokenExpired, InvalidCredentials:
-			if err = b.refresh(); err != nil {
-				return res, err
-			}
 
 		default:
 			return res, err
@@ -184,19 +133,28 @@ func (b *Session) SendRequest(body interface{}, endpoint string, soapAction stri
 }
 
 func (b *Session) sendRequest(body interface{}, endpoint string, soapAction string) ([]byte, error) {
+	header := RequestHeader{
+		BingNS:            "https://bingads.microsoft.com/CampaignManagement/v11",
+		Action:            soapAction,
+		CustomerAccountId: b.AccountId,
+		CustomerId:        b.CustomerId,
+		DeveloperToken:    b.DeveloperToken,
+	}
+	if b.TokenSource != nil {
+		token, err := b.TokenSource.Token()
+		if err != nil {
+			return nil, err
+		}
+		header.AuthenticationToken = token.AccessToken
+	} else {
+		header.Username = b.Username
+		header.Password = b.Password
+	}
+
 	envelope := RequestEnvelope{
-		EnvNS: "http://www.w3.org/2001/XMLSchema-instance",
-		EnvSS: "http://schemas.xmlsoap.org/soap/envelope/",
-		Header: RequestHeader{
-			BingNS:              "https://bingads.microsoft.com/CampaignManagement/v11",
-			Action:              soapAction,
-			CustomerAccountId:   b.AccountId,
-			CustomerId:          b.CustomerId,
-			AuthenticationToken: b.AuthToken,
-			DeveloperToken:      b.DeveloperToken,
-			Username:            b.Username,
-			Password:            b.Password,
-		},
+		EnvNS:  "http://www.w3.org/2001/XMLSchema-instance",
+		EnvSS:  "http://schemas.xmlsoap.org/soap/envelope/",
+		Header: header,
 		Body: RequestBody{
 			Body: body,
 		},
@@ -267,13 +225,23 @@ func (b *Session) sendRequest(body interface{}, endpoint string, soapAction stri
 	return res.Body.OperationResponse, err
 }
 
-func New(customerAccountId string, customerId string, developerToken string, authToken string, username string, password string) *Session {
+type SessionConfig struct {
+	OAuth2Config   *oauth2.Config
+	OAuth2Token    *oauth2.Token
+	AccountId      string
+	CustomerId     string
+	DeveloperToken string
+	HTTPClient     HttpClient
+}
+
+func NewSession(config SessionConfig) *Session {
+	tokenSource := config.OAuth2Config.TokenSource(context.TODO(), config.OAuth2Token)
+
 	return &Session{
-		AccountId:      customerAccountId,
-		CustomerId:     customerId,
-		DeveloperToken: developerToken,
-		AuthToken:      authToken,
-		Username:       username,
-		Password:       password,
+		AccountId:      config.AccountId,
+		CustomerId:     config.CustomerId,
+		DeveloperToken: config.DeveloperToken,
+		HTTPClient:     config.HTTPClient,
+		TokenSource:    tokenSource,
 	}
 }

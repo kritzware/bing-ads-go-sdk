@@ -3,6 +3,8 @@ package bingads
 import (
 	"encoding/xml"
 	"net/http"
+
+	"golang.org/x/oauth2"
 )
 
 var (
@@ -54,43 +56,12 @@ type Session struct {
 	AccountId      string
 	CustomerId     string
 	DeveloperToken string
-	AuthToken      string
 	Username       string
 	Password       string
 	HTTPClient     HttpClient
-	ClientId       string
-	ClientSecret   string
-	RefreshToken   string
+	TokenSource    oauth2.TokenSource
 }
 
 type HttpClient interface {
 	Do(*http.Request) (*http.Response, error)
-}
-
-type Config struct {
-	HTTPClient     *http.Client
-	AccountId      string
-	CustomerId     string
-	DeveloperToken string
-	AuthToken      string
-	Username       string
-	Password       string
-}
-
-func NewSession(config *Config) *Session {
-	s := &Session{
-		AccountId:      config.AccountId,
-		CustomerId:     config.CustomerId,
-		DeveloperToken: config.DeveloperToken,
-		AuthToken:      config.AuthToken,
-		Username:       config.Username,
-		Password:       config.Password,
-		HTTPClient:     config.HTTPClient,
-	}
-
-	if s.HTTPClient == nil {
-		s.HTTPClient = &http.Client{}
-	}
-
-	return s
 }
