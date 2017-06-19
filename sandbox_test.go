@@ -527,3 +527,48 @@ func TestUnmarshalAdgroupCriterions(t *testing.T) {
 
 	fmt.Println(res)
 }
+
+func TestSandboxRemoveItemsFromSharedList(t *testing.T) {
+	svc := getTestClient()
+
+	added, err := svc.AddSharedEntity(&NegativeKeywordList{
+		Name: "temp shared keyword list",
+	}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer func() {
+		svc.DeleteSharedEntities([]NegativeKeywordList{
+			{Id: added.SharedEntityId},
+		})
+	}()
+
+	res, err := svc.AddListItemsToSharedList(&NegativeKeywordList{Id: added.SharedEntityId}, []NegativeKeyword{
+		{MatchType: "Phrase", Text: "1"},
+		{MatchType: "Phrase", Text: "2"},
+		{MatchType: "Phrase", Text: "3"},
+		{MatchType: "Phrase", Text: "4"},
+		{MatchType: "Phrase", Text: "5"},
+		{MatchType: "Phrase", Text: "6"},
+		{MatchType: "Phrase", Text: "7"},
+		{MatchType: "Phrase", Text: "8"},
+		{MatchType: "Phrase", Text: "9"},
+		{MatchType: "Phrase", Text: "10"},
+	})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	deleteResponse, err := svc.DeleteListItemsFromSharedList(&NegativeKeywordList{Id: added.SharedEntityId}, res.ListItemIds)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(deleteResponse.PartialErrors) > 0 {
+		t.Errorf("expected 0 partial errors, got %d", len(deleteResponse.PartialErrors))
+	}
+
+}

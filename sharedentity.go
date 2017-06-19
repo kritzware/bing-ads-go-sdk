@@ -80,7 +80,7 @@ type GetListItemsBySharedListResponse struct {
 	ListItems []NegativeKeyword `xml:"ListItems>SharedListItem"`
 }
 
-//MatchType: Exact Phrase Broad Content
+//MatchType :: Exact | Phrase | Broad | Content
 type NegativeKeyword struct {
 	XMLName   xml.Name `xml:"SharedListItem"`
 	Id        int64
@@ -352,6 +352,48 @@ func (c *CampaignService) AddListItemsToSharedList(list *NegativeKeywordList, it
 	}
 
 	ret := &AddListItemsToSharedListResponse{}
+	err = xml.Unmarshal(res, ret)
+	return ret, err
+}
+
+func (s DeleteListItemsFromSharedListRequest) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	e.EncodeToken(st("DeleteListItemsFromSharedListRequest", "xmlns", "https://bingads.microsoft.com/CampaignManagement/v11"))
+	e.EncodeToken(st("ListItemIds", "xmlns:a1", "http://schemas.microsoft.com/2003/10/Serialization/Arrays"))
+
+	for i := 0; i < len(s.ListItemIds); i++ {
+		e.EncodeElement(s.ListItemIds[i], st("a1:long"))
+	}
+
+	e.EncodeToken(xml.EndElement{xml.Name{Local: "ListItemIds"}})
+
+	e.EncodeElement(s.SharedList, st("SharedList"))
+	e.EncodeToken(xml.EndElement{xml.Name{Local: "DeleteListItemsFromSharedListRequest"}})
+	return nil
+}
+
+type DeleteListItemsFromSharedListRequest struct {
+	XMLName     xml.Name `xml:"DeleteListItemsFromSharedListRequest"`
+	NS          string   `xml:"xmlns,attr"`
+	ListItemIds []int64  `xml:"ListItemIds>long"`
+	SharedList  *NegativeKeywordList
+}
+
+type DeleteListItemsFromSharedListResponse struct {
+	PartialErrors []BatchError `xml:"PartialErrors>BatchError"`
+}
+
+func (c *CampaignService) DeleteListItemsFromSharedList(list *NegativeKeywordList, items []int64) (*DeleteListItemsFromSharedListResponse, error) {
+	req := DeleteListItemsFromSharedListRequest{
+		NS:          "https://bingads.microsoft.com/CampaignManagement/v11",
+		SharedList:  list,
+		ListItemIds: items,
+	}
+	res, err := c.Session.SendRequest(req, c.Endpoint, "DeleteListItemsFromSharedList")
+	if err != nil {
+		return nil, err
+	}
+
+	ret := &DeleteListItemsFromSharedListResponse{}
 	err = xml.Unmarshal(res, ret)
 	return ret, err
 }

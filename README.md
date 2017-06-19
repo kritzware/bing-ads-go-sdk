@@ -7,6 +7,7 @@ WIP implementation of select features in Bing Ads' V11 API
 - AddListItemsToSharedList
 - AddSharedEntity
 - ApplyProductPartitionActions
+- DeleteListItemsFromSharedList
 - DeleteSharedEntities
 - DeleteSharedEntityAssociations
 - GetAdGroupCriterionsByIds
