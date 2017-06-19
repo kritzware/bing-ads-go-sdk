@@ -70,20 +70,20 @@ const (
 
 type CampaignService struct {
 	Endpoint string
-	Client   Client
+	Session  *Session
 }
 
-func NewCampaignService(client *Session) *CampaignService {
+func NewCampaignService(session *Session) *CampaignService {
 	return &CampaignService{
 		Endpoint: "https://campaign.api.bingads.microsoft.com/Api/Advertiser/CampaignManagement/v11/CampaignManagementService.svc",
-		Client:   client,
+		Session:  session,
 	}
 }
 
 type GetCampaignsByAccountIdRequest struct {
 	XMLName      xml.Name     `xml:"GetCampaignsByAccountIdRequest"`
 	NS           string       `xml:"xmlns,attr"`
-	AccountId    int64        `xml:"AccountId"`
+	AccountId    string       `xml:"AccountId"`
 	CampaignType CampaignType `xml:"CampaignType"`
 }
 
@@ -91,14 +91,14 @@ type GetCampaignsByAccountIdResponse struct {
 	Campaigns []Campaign `xml:"Campaigns>Campaign"`
 }
 
-func (c *CampaignService) GetCampaignsByAccountId(account int64, campaignType CampaignType) ([]Campaign, error) {
+func (c *CampaignService) GetCampaignsByAccountId(campaignType CampaignType) ([]Campaign, error) {
 	req := GetCampaignsByAccountIdRequest{
 		NS:           "https://bingads.microsoft.com/CampaignManagement/v11",
 		CampaignType: campaignType,
-		AccountId:    account,
+		AccountId:    c.Session.AccountId,
 	}
 
-	resp, err := c.Client.SendRequest(req, c.Endpoint, "GetCampaignsByAccountId")
+	resp, err := c.Session.SendRequest(req, c.Endpoint, "GetCampaignsByAccountId")
 
 	if err != nil {
 		return nil, err
@@ -110,14 +110,14 @@ func (c *CampaignService) GetCampaignsByAccountId(account int64, campaignType Ca
 	return campaignResponse.Campaigns, err
 }
 
-func (c *CampaignService) AddCampaigns(account int64, campaigns []Campaign) (*AddCampaignsResponse, error) {
+func (c *CampaignService) AddCampaigns(campaigns []Campaign) (*AddCampaignsResponse, error) {
 	req := AddCampaignsRequest{
 		NS:        "https://bingads.microsoft.com/CampaignManagement/v11",
 		Campaigns: campaigns,
-		AccountId: account,
+		AccountId: c.Session.AccountId,
 	}
 
-	resp, err := c.Client.SendRequest(req, c.Endpoint, "AddCampaigns")
+	resp, err := c.Session.SendRequest(req, c.Endpoint, "AddCampaigns")
 
 	if err != nil {
 		return nil, err
@@ -131,7 +131,7 @@ func (c *CampaignService) AddCampaigns(account int64, campaigns []Campaign) (*Ad
 type AddCampaignsRequest struct {
 	XMLName   xml.Name   `xml:"AddCampaignsRequest"`
 	NS        string     `xml:"xmlns,attr"`
-	AccountId int64      `xml:"AccountId"`
+	AccountId string     `xml:"AccountId"`
 	Campaigns []Campaign `xml:"Campaigns>Campaign"`
 }
 type AddCampaignsResponse struct {

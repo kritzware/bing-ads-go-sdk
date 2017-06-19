@@ -49,7 +49,7 @@ func (c *CampaignService) GetAdgroupsByCampaign(campaign int64) ([]AdGroup, erro
 		CampaignId: campaign,
 	}
 
-	resp, err := c.Client.SendRequest(req, c.Endpoint, "GetAdGroupsByCampaignId")
+	resp, err := c.Session.SendRequest(req, c.Endpoint, "GetAdGroupsByCampaignId")
 
 	if err != nil {
 		return nil, err
@@ -67,7 +67,7 @@ func (c *CampaignService) AddAdGroups(campaign int64, adgroups []AdGroup) (*AddA
 		AdGroups:   adgroups,
 	}
 
-	resp, err := c.Client.SendRequest(req, c.Endpoint, "AddAdGroups")
+	resp, err := c.Session.SendRequest(req, c.Endpoint, "AddAdGroups")
 
 	if err != nil {
 		return nil, err

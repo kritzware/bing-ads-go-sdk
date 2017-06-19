@@ -161,7 +161,7 @@ func (c *CampaignService) GetAdGroupCriterionsByIds(adgroup int64) ([]BiddableAd
 		CriterionType: "ProductPartition",
 		NS:            "https://bingads.microsoft.com/CampaignManagement/v11",
 	}
-	resp, err := c.Client.SendRequest(req, c.Endpoint, "GetAdGroupCriterionsByIds")
+	resp, err := c.Session.SendRequest(req, c.Endpoint, "GetAdGroupCriterionsByIds")
 
 	if err != nil {
 		return nil, err
@@ -230,7 +230,7 @@ func (c *CampaignService) ApplyProductPartitionActions(actions []AdGroupCriterio
 		NS:               "https://bingads.microsoft.com/CampaignManagement/v11",
 		CriterionActions: actions,
 	}
-	resp, err := c.Client.SendRequest(req, c.Endpoint, "ApplyProductPartitionActions")
+	resp, err := c.Session.SendRequest(req, c.Endpoint, "ApplyProductPartitionActions")
 
 	if err != nil {
 		return nil, err

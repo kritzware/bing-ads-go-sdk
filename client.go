@@ -16,9 +16,12 @@ import (
 var AuthenticationTokenExpired = fmt.Errorf("AuthenticationTokenExpired")
 var InvalidCredentials = fmt.Errorf("InvalidCredentials")
 
+/*
 type Client interface {
 	SendRequest(interface{}, string, string) ([]byte, error)
 }
+*/
+
 type AuthHeader struct {
 	Action              string `xml:"https://adcenter.microsoft.com/v8 Action"`
 	ApplicationToken    string `xml:"https://adcenter.microsoft.com/v8 ApplicationToken"`
@@ -137,8 +140,8 @@ func (b *Session) sendRequest(body interface{}, endpoint string, soapAction stri
 		BingNS:            "https://bingads.microsoft.com/CampaignManagement/v11",
 		Action:            soapAction,
 		CustomerAccountId: b.AccountId,
-		CustomerId:        b.CustomerId,
-		DeveloperToken:    b.DeveloperToken,
+		//CustomerId:        b.CustomerId,
+		DeveloperToken: b.DeveloperToken,
 	}
 	if b.TokenSource != nil {
 		token, err := b.TokenSource.Token()
