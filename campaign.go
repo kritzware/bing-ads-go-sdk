@@ -4,22 +4,10 @@ import (
 	"encoding/xml"
 )
 
-const (
-	ManualCpc BiddingScheme = "ManualCpcBiddingScheme"
-)
-
-type BiddingScheme string
-
-func (s BiddingScheme) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
-	start.Attr = ats("i:type", string(s))
-	e.EncodeElement(string(s), st("Type"))
-	e.EncodeToken(xml.EndElement{start.Name})
-	return nil
-}
-
+//BudgetType :: DailyBudgetStandard
 type Campaign struct {
 	BiddingScheme BiddingScheme `xml:"BiddingScheme"`
-	BudgetType    BudgetType    `xml:"BudgetType"`
+	BudgetType    string        `xml:"BudgetType"`
 	BudgetId      string        `xml:",omitempty"`
 	DailyBudget   float64       `xml:"DailyBudget"`
 	Description   string        `xml:"Description"`
@@ -33,9 +21,40 @@ type Campaign struct {
 	Settings     []CampaignSettings `xml:"Settings>Setting"`
 }
 
+//BiddingScheme :: ManualCpc
+type BiddingScheme struct {
+	Type string
+}
+
+func (s BiddingScheme) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	start.Attr = ats("i:type", s.Type+"BiddingScheme")
+	e.EncodeToken(start)
+	e.EncodeElement(s.Type, st("Type"))
+	e.EncodeToken(xml.EndElement{start.Name})
+	return nil
+}
+
 func (s CampaignSettings) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	start.Attr = ats("i:type", s.Type)
-	return e.EncodeElement(s, start)
+	e.EncodeToken(start)
+
+	e.EncodeElement(s.Type, st("Type"))
+	if s.LocalInventoryAdsEnabled != "" {
+		e.EncodeElement(s.LocalInventoryAdsEnabled, st("LocalInventoryAdsEnabled"))
+	}
+	e.EncodeElement(s.Priority, st("Priority"))
+	e.EncodeElement(s.SalesCountryCode, st("SalesCountryCode"))
+	e.EncodeElement(s.StoreId, st("StoreId"))
+
+	if s.Language != "" {
+		e.EncodeElement(s.Language, st("Language"))
+	}
+	if s.DomainName != "" {
+		e.EncodeElement(s.DomainName, st("DomainName"))
+	}
+
+	e.EncodeToken(xml.EndElement{start.Name})
+	return nil
 }
 
 //TODO: split into shoppingsetting + dynamicsearachadssetting
@@ -123,9 +142,15 @@ func (c *CampaignService) AddCampaigns(campaigns []Campaign) (*AddCampaignsRespo
 		return nil, err
 	}
 
-	ret := &AddCampaignsResponse{}
-	err = xml.Unmarshal(resp, ret)
-	return ret, err
+	ret := &addCampaignsResponse{}
+	if err := xml.Unmarshal(resp, ret); err != nil {
+		return nil, err
+	}
+
+	return &AddCampaignsResponse{
+		CampaignIds:   []int64(ret.CampaignIds),
+		PartialErrors: ret.PartialErrors,
+	}, nil
 }
 
 type AddCampaignsRequest struct {
@@ -134,7 +159,58 @@ type AddCampaignsRequest struct {
 	AccountId string     `xml:"AccountId"`
 	Campaigns []Campaign `xml:"Campaigns>Campaign"`
 }
+type addCampaignsResponse struct {
+	CampaignIds   Longs        `xml:"CampaignIds>long"`
+	PartialErrors []BatchError `xml:"PartialErrors>BatchError"`
+}
+
 type AddCampaignsResponse struct {
 	CampaignIds   []int64      `xml:"CampaignIds>long"`
+	PartialErrors []BatchError `xml:"PartialErrors>BatchError"`
+}
+
+func (c *CampaignService) DeleteCampaigns(campaigns []int64) (*DeleteCampaignsResponse, error) {
+	req := DeleteCampaignsRequest{
+		NS:          "https://bingads.microsoft.com/CampaignManagement/v11",
+		CampaignIds: campaigns,
+		AccountId:   c.Session.AccountId,
+	}
+
+	resp, err := c.Session.SendRequest(req, c.Endpoint, "DeleteCampaigns")
+
+	if err != nil {
+		return nil, err
+	}
+
+	ret := &DeleteCampaignsResponse{}
+	if err := xml.Unmarshal(resp, ret); err != nil {
+		return nil, err
+	}
+
+	return ret, nil
+}
+
+type DeleteCampaignsRequest struct {
+	XMLName     xml.Name `xml:"DeleteCampaignsRequest"`
+	NS          string   `xml:"xmlns,attr"`
+	AccountId   string
+	CampaignIds []int64 `xml:"CampaignIds>long"`
+}
+
+func (s DeleteCampaignsRequest) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	e.EncodeToken(st("DeleteCampaignsRequest", "xmlns", s.NS))
+	e.EncodeElement(s.AccountId, st("AccountId"))
+
+	e.EncodeToken(st("CampaignIds", "xmlns:a1", "http://schemas.microsoft.com/2003/10/Serialization/Arrays"))
+	for i := 0; i < len(s.CampaignIds); i++ {
+		e.EncodeElement(s.CampaignIds[i], st("a1:long"))
+	}
+	e.EncodeToken(xml.EndElement{xml.Name{Local: "CampaignIds"}})
+
+	e.EncodeToken(xml.EndElement{xml.Name{Local: "DeleteCampaignsRequest"}})
+	return nil
+}
+
+type DeleteCampaignsResponse struct {
 	PartialErrors []BatchError `xml:"PartialErrors>BatchError"`
 }

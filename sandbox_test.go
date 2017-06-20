@@ -372,7 +372,7 @@ func TestAddAdGroupSandbox(t *testing.T) {
 			Language:       "English",
 			Network:        "OwnedAndOperatedOnly",
 			AdDistribution: "Search",
-			BiddingScheme:  BiddingScheme("ManualCpcBiddingScheme"),
+			BiddingScheme:  BiddingScheme{Type: "ManualCpc"},
 		},
 	}
 
@@ -419,16 +419,30 @@ func TestSandboxAddCampaignCriterions(t *testing.T) {
 	fmt.Println(res)
 }
 
-func TestAddCampaigns(t *testing.T) {
-
+func TestAddCampaignsAndDupeAdd(t *testing.T) {
 	svc := getTestClient()
+	campaigns, err := svc.GetCampaignsByAccountId(Shopping)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	name := "duplicate test campaign"
+
+	for _, c := range campaigns {
+		if c.Name == name {
+			_, err := svc.DeleteCampaigns([]int64{c.Id})
+			if err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
 
 	toadd := []Campaign{{
-		BiddingScheme: ManualCpc,
+		BiddingScheme: BiddingScheme{Type: "ManualCpc"},
 		BudgetType:    "DailyBudgetStandard",
 		DailyBudget:   25,
-		Description:   "a new campaign",
-		Name:          "newcapaign",
+		Description:   "duplicate campaign",
+		Name:          name,
 		Status:        "Active",
 		TimeZone:      "EasternTimeUSCanada",
 		CampaignType:  Shopping,
@@ -440,21 +454,36 @@ func TestAddCampaigns(t *testing.T) {
 		}},
 	}}
 
-	ids, err := svc.AddCampaigns(toadd)
+	res, err := svc.AddCampaigns(toadd)
 
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
-	fmt.Println(ids)
+	if len(res.PartialErrors) > 0 {
+		t.Fatalf("unexpected partial error %v\n", res.PartialErrors)
+	}
+
+	defer func() {
+		svc.DeleteCampaigns([]int64{res.CampaignIds[0]})
+	}()
+
+	duperes, err := svc.AddCampaigns(toadd)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(duperes.PartialErrors) != 1 {
+		t.Errorf("expected duplicate campaign error")
+	}
 }
 
 //addcampaignerror
 //<AddCampaignsResponse xmlns="https://bingads.microsoft.com/CampaignManagement/v11"><CampaignIds xmlns:a="http://schemas.datacontract.org/2004/07/System" xmlns:i="http://www.w3.org/2001/XMLSchema-instance"><a:long i:nil="true"/></CampaignIds><PartialErrors xmlns:i="http://www.w3.org/2001/XMLSchema-instance"><BatchError><Code>1154</Code><Details i:nil="true"/><ErrorCode>CampaignServiceCampaignShoppingCampaignStoreIdInvalid</ErrorCode><FieldPath i:nil="true"/><ForwardCompatibilityMap i:nil="true" xmlns:a="http://schemas.datacontract.org/2004/07/System.Collections.Generic"/><Index>0</Index><Message>The store ID of the shopping campaign is invalid.</Message><Type>BatchError</Type></BatchError></PartialErrors></AddCampaignsResponse>
 
 func TestUnmarshalCampaigns(t *testing.T) {
-	client := StringClient(envheader + `<GetCampaignsByAccountIdResponse xmlns="https://bingads.microsoft.com/CampaignManagement/v11"><Campaigns xmlns:i="http://www.w3.org/2001/XMLSchema-instance"><Campaign><BiddingScheme i:type="ManualCpcBiddingScheme"><Type>ManualCpc</Type></BiddingScheme><BudgetType>DailyBudgetStandard</BudgetType><DailyBudget>25</DailyBudget><Description>dota2</Description><ForwardCompatibilityMap xmlns:a="http://schemas.datacontract.org/2004/07/System.Collections.Generic"/><Id>804002264</Id><Name>dota2</Name><NativeBidAdjustment i:nil="true"/><Status>Active</Status><TimeZone>EasternTimeUSCanada</TimeZone><TrackingUrlTemplate i:nil="true"/><UrlCustomParameters i:nil="true" xmlns:a="http://schemas.datacontract.org/2004/07/Microsoft.AdCenter.Advertiser.CampaignManagement.Api.DataContracts.V11"/><CampaignType>Shopping</CampaignType><Settings><Setting i:type="ShoppingSetting"><Type>ShoppingSetting</Type><LocalInventoryAdsEnabled i:nil="true"/><Priority>0</Priority><SalesCountryCode>US</SalesCountryCode><StoreId>1387210</StoreId></Setting></Settings><BudgetId i:nil="true"/><Languages i:nil="true" xmlns:a="http://schemas.microsoft.com/2003/10/Serialization/Arrays"/></Campaign></Campaigns></GetCampaignsByAccountIdResponse>` + envend)
-
+	client := StringClient(envheader + `<GetCampaignsByAccountIdResponse xmlns="https://bingads.microsoft.com/CampaignManagement/v11"><Campaigns xmlns:i="http://www.w3.org/2001/XMLSchema-instance"><Campaign><BiddingScheme i:type="ManualCpcBiddingScheme"><Type>ManualCpc</Type></BiddingScheme><BudgetType>DailyBudgetStandard</BudgetType><DailyBudget>25</DailyBudget><Description>dota2</Description><Id>804002264</Id><Name>dota2</Name><NativeBidAdjustment i:nil="true"/><Status>Active</Status><TimeZone>EasternTimeUSCanada</TimeZone><TrackingUrlTemplate i:nil="true"/><CampaignType>Shopping</CampaignType><Settings><Setting i:type="ShoppingSetting"><Type>ShoppingSetting</Type><LocalInventoryAdsEnabled i:nil="true"/><Priority>0</Priority><SalesCountryCode>US</SalesCountryCode><StoreId>1387210</StoreId></Setting></Settings><BudgetId i:nil="true"/><Languages i:nil="true" xmlns:a="http://schemas.microsoft.com/2003/10/Serialization/Arrays"/></Campaign></Campaigns></GetCampaignsByAccountIdResponse>` + envend)
 	svc := &CampaignService{
 		Endpoint: "https://campaign.api.sandbox.bingads.microsoft.com/Api/Advertiser/CampaignManagement/v11/CampaignManagementService.svc",
 		Session:  &Session{HTTPClient: client},
@@ -467,7 +496,7 @@ func TestUnmarshalCampaigns(t *testing.T) {
 	}
 
 	expected := []Campaign{{
-		BiddingScheme: BiddingScheme("ManualCpc"),
+		BiddingScheme: BiddingScheme{Type: "ManualCpc"},
 		BudgetType:    "DailyBudgetStandard",
 		DailyBudget:   25,
 		Description:   "dota2",
@@ -485,7 +514,7 @@ func TestUnmarshalCampaigns(t *testing.T) {
 	}}
 
 	if !reflect.DeepEqual(res, expected) {
-		t.Errorf("expected %v, got %v", expected, res)
+		t.Errorf("expected:\n%#v\n, got:\n%#v", expected, res)
 	}
 }
 
