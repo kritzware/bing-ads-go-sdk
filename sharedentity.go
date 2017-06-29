@@ -2,6 +2,7 @@ package bingads
 
 import (
 	"encoding/xml"
+	"fmt"
 )
 
 type GetSharedEntitiesByAccountIdRequest struct {
@@ -170,6 +171,10 @@ type BatchError struct {
 	Index     int
 	Message   string
 	Type      string
+}
+
+func (s BatchError) Error() string {
+	return fmt.Sprintf("batch error: %s", s.Message)
 }
 
 type DeleteSharedEntitiesResponse struct {

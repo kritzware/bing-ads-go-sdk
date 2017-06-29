@@ -25,7 +25,9 @@ func (s CampaignCriterion) MarshalXML(e *xml.Encoder, start xml.StartElement) er
 		e.EncodeElement(s.Id, st("Id"))
 	}
 
-	e.EncodeElement(s.Status, st("Status"))
+	if s.Status != "" {
+		e.EncodeElement(s.Status, st("Status"))
+	}
 	e.EncodeElement(s.Type, st("Type"))
 	e.Encode(s.CriterionBid)
 	//marshalCriterion(s.Criterion, e)
