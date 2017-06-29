@@ -394,7 +394,7 @@ func TestSandboxAddCampaignCriterions(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	fmt.Println("criterions:", crits)
+	exists := len(crits) == 1
 
 	cs := []CampaignCriterion{
 		CampaignCriterion{
@@ -410,13 +410,13 @@ func TestSandboxAddCampaignCriterions(t *testing.T) {
 		},
 	}
 
-	res, err := svc.AddCampaignCriterions("ProductScope", cs)
+	_, err = svc.AddCampaignCriterions("ProductScope", cs)
 
-	if err != nil {
+	if err == CampaignCriterionAlreadyExists && exists {
+		t.Logf("campaigns can only have 1 criterion")
+	} else if err != nil {
 		t.Error(err)
 	}
-
-	fmt.Println(res)
 }
 
 func TestAddCampaignsAndDupeAdd(t *testing.T) {

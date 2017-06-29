@@ -2,6 +2,7 @@ package bingads
 
 import (
 	"encoding/xml"
+	"errors"
 )
 
 func (s CampaignCriterion) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
@@ -75,6 +76,8 @@ func (s CriterionBid) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	return nil
 }
 
+var CampaignCriterionAlreadyExists = errors.New("CampaignCriterionAlreadyExists")
+
 func (c *CampaignService) AddCampaignCriterions(t string, cs []CampaignCriterion) ([]int64, error) {
 	req := AddCampaignCriterionsRequest{
 		NS:                 "https://bingads.microsoft.com/CampaignManagement/v11",
@@ -88,9 +91,21 @@ func (c *CampaignService) AddCampaignCriterions(t string, cs []CampaignCriterion
 		return nil, err
 	}
 
-	ret := AddCampaignCriterionsResponse{}
-	err = xml.Unmarshal(resp, &ret)
-	return ret.CampaignCriterionIds, err
+	ret := &AddCampaignCriterionsResponse{}
+	if err := xml.Unmarshal(resp, ret); err != nil {
+		return nil, err
+	}
+
+	if ret.NestedPartialErrors != nil {
+		switch ret.NestedPartialErrors.ErrorCode {
+		case "CampaignCriterionAlreadyExists":
+			return nil, CampaignCriterionAlreadyExists
+		default:
+			return nil, ret.NestedPartialErrors
+		}
+	}
+
+	return ret.CampaignCriterionIds, nil
 }
 
 type AddCampaignCriterionsRequest struct {
@@ -100,8 +115,23 @@ type AddCampaignCriterionsRequest struct {
 	CriterionType      string
 }
 
+type BatchErrorCollection struct {
+	Code        int
+	Details     string
+	ErrorCode   string
+	Index       int
+	Message     string
+	Type        string
+	BatchErrors []BatchError
+}
+
+func (s BatchErrorCollection) Error() string {
+	return s.Message
+}
+
 type AddCampaignCriterionsResponse struct {
-	CampaignCriterionIds Longs `xml:"CampaignCriterionIds>long"`
+	CampaignCriterionIds Longs                 `xml:"CampaignCriterionIds>long"`
+	NestedPartialErrors  *BatchErrorCollection `xml:"NestedPartialErrors>BatchErrorCollection"`
 }
 
 func (c *CampaignService) GetCampaignCriterionsByIds(campaign int64) ([]CampaignCriterion, error) {
