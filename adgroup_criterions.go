@@ -215,7 +215,7 @@ func (s *Longs) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
 			open = true
 		case xml.EndElement:
 			if open == false {
-				//*s = append(*s, -1)
+				*s = append(*s, 0)
 			}
 			open = false
 		}

@@ -303,10 +303,20 @@ func TestSandboxApplyProductPartitionActions(t *testing.T) {
 
 	fmt.Println(applied)
 
+	successful := func() []int64 {
+		xs := []int64{}
+		for i := 0; i < len(applied.AdGroupCriterionIds); i++ {
+			if applied.AdGroupCriterionIds[i] > 0 {
+				xs = append(xs, applied.AdGroupCriterionIds[i])
+			}
+		}
+		return xs
+	}()
+
 	expectedSuccessful := len(actions) - len(expectedPartialFailures)
 
-	if len(applied.AdGroupCriterionIds) != expectedSuccessful {
-		t.Errorf("expected %d created, got %d", expectedSuccessful, len(applied.AdGroupCriterionIds))
+	if len(successful) != expectedSuccessful {
+		t.Errorf("expected %d created, got %d", expectedSuccessful, len(successful))
 	}
 
 	for _, failure := range applied.PartialErrors {
@@ -315,7 +325,7 @@ func TestSandboxApplyProductPartitionActions(t *testing.T) {
 		}
 	}
 
-	cleanup(applied.AdGroupCriterionIds[0])
+	cleanup(successful[0])
 }
 
 func TestUnmarshalCampaignScope(t *testing.T) {
@@ -419,7 +429,7 @@ func TestSandboxAddCampaignCriterions(t *testing.T) {
 	}
 }
 
-func TestAddCampaignsAndDupeAdd(t *testing.T) {
+func TestSandboxAddCampaignsAndDupeAdd(t *testing.T) {
 	svc := getTestClient()
 	campaigns, err := svc.GetCampaignsByAccountId(Shopping)
 	if err != nil {
