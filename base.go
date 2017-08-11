@@ -46,7 +46,7 @@ type RequestHeader struct {
 	Action              string
 	AuthenticationToken string `xml:"AuthenticationToken,omitempty"`
 	CustomerAccountId   string `xml:"CustomerAccountId"`
-	CustomerId          string `xml:"CustomerId"`
+	CustomerId          string `xml:"CustomerId,omitempty"`
 	DeveloperToken      string `xml:"DeveloperToken"`
 	Password            string `xml:"Password,omitempty"`
 	Username            string `xml:"UserName,omitempty"`

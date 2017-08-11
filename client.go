@@ -122,7 +122,7 @@ func (b *Session) SendRequest(body interface{}, endpoint string, soapAction stri
 	var res []byte
 
 	for i := 0; i <= 1; i++ {
-		res, err = b.sendRequest(body, endpoint, soapAction)
+		res, err = b.sendRequest(body, endpoint, soapAction, campaignns)
 
 		switch err {
 		case AuthenticationTokenExpired, InvalidCredentials:
@@ -135,13 +135,21 @@ func (b *Session) SendRequest(body interface{}, endpoint string, soapAction stri
 	return res, err
 }
 
-func (b *Session) sendRequest(body interface{}, endpoint string, soapAction string) ([]byte, error) {
+var campaignns = "https://bingads.microsoft.com/CampaignManagement/v11"
+var reportingns = "https://bingads.microsoft.com/Reporting/v11"
+
+func (b *Session) reportRequest(body interface{}, endpoint string, soapAction string) ([]byte, error) {
+	return b.sendRequest(body, endpoint, soapAction, reportingns)
+}
+
+//FIXME: namespace
+func (b *Session) sendRequest(body interface{}, endpoint string, soapAction string, ns string) ([]byte, error) {
 	header := RequestHeader{
-		BingNS:            "https://bingads.microsoft.com/CampaignManagement/v11",
+		BingNS:            ns,
 		Action:            soapAction,
 		CustomerAccountId: b.AccountId,
-		//CustomerId:        b.CustomerId,
-		DeveloperToken: b.DeveloperToken,
+		CustomerId:        b.CustomerId,
+		DeveloperToken:    b.DeveloperToken,
 	}
 	if b.TokenSource != nil {
 		token, err := b.TokenSource.Token()
