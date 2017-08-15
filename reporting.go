@@ -114,15 +114,22 @@ func (s ReportTime) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 
 func (s *ProductDimensionPerformanceReportRequest) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	req := PerformanceReportRequest(*s)
-	return marshallPerformanceReportRequest(e, &req, "ProductDimensionPerformanceReport")
+	return marshallPerformanceReportRequest(e, req, "ProductDimensionPerformanceReport")
 }
 
 func (s *AdGroupPerformanceReportRequest) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	req := PerformanceReportRequest(*s)
-	return marshallPerformanceReportRequest(e, &req, "AdGroupPerformanceReport")
+	return marshallPerformanceReportRequest(e, req, "AdGroupPerformanceReport")
 }
 
-func marshallPerformanceReportRequest(e *xml.Encoder, s *PerformanceReportRequest, t string) error {
+func (s PerformanceReportRequest) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	if s.Type == "" {
+		return fmt.Errorf("missing report type")
+	}
+	return marshallPerformanceReportRequest(e, s, s.Type)
+}
+
+func marshallPerformanceReportRequest(e *xml.Encoder, s PerformanceReportRequest, t string) error {
 	start := st("ReportRequest", "i:type", t+"Request")
 	e.EncodeToken(start)
 	excludes := []string{"ExcludeColumnHeaders", "ExcludeReportFooter", "ExcludeReportHeader"}
