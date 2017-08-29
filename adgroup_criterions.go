@@ -14,10 +14,9 @@ type ProductCondition struct {
 //TODO: derived types
 //https://msdn.microsoft.com/en-us/library/bing-ads-campaign-management-getcampaigncriterionsbyids.aspx
 type ProductPartition struct {
-	Type      string
-	Condition ProductCondition
-	//should be nullable int64
-	ParentCriterionId string `xml:",omitempty"`
+	Type              string
+	Condition         ProductCondition
+	ParentCriterionId int64  `xml:",omitempty"`
 	PartitionType     string `xml:",omitempty"`
 }
 
@@ -52,7 +51,7 @@ func (s ProductPartition) MarshalXML(e *xml.Encoder, start xml.StartElement) err
 	//e.Encode(s.Condition)
 	e.EncodeElement(s.Condition, st("Condition"))
 
-	if s.ParentCriterionId != "" {
+	if s.ParentCriterionId != 0 {
 		e.EncodeElement(s.ParentCriterionId, st("ParentCriterionId"))
 	} else {
 		e.EncodeElement("", st("ParentCriterionId", "i:nil", "true"))
