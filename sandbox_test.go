@@ -196,7 +196,7 @@ func TestSandboxApplyProductPartitionActions(t *testing.T) {
 
 	fmt.Println(existing)
 
-	parentid := fmt.Sprintf("%d", existing[0].Id)
+	parentid := existing[0].Id
 
 	tomodifyid, err := func() (int64, error) {
 		for _, e := range existing {

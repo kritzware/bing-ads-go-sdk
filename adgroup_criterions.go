@@ -16,7 +16,7 @@ type ProductCondition struct {
 type ProductPartition struct {
 	Type              string
 	Condition         ProductCondition
-	ParentCriterionId int64  `xml:",omitempty"`
+	ParentCriterionId int64
 	PartitionType     string `xml:",omitempty"`
 }
 
@@ -195,6 +195,26 @@ type Longs []int64
 type ApplyProductPartitionActionsResponse struct {
 	AdGroupCriterionIds Longs        `xml:"AdGroupCriterionIds>long"`
 	PartialErrors       []BatchError `xml:"PartialErrors>BatchError"`
+}
+
+type productPartition struct {
+	Type              string
+	Condition         ProductCondition
+	ParentCriterionId string
+	PartitionType     string `xml:",omitempty"`
+}
+
+func (s *ProductPartition) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
+	p := productPartition{}
+	dec.DecodeElement(&p, &start)
+	s.Condition = p.Condition
+	s.PartitionType = p.PartitionType
+	s.Type = p.Type
+	if p.ParentCriterionId != "" {
+		n, _ := strconv.ParseInt(p.ParentCriterionId, 10, 64)
+		s.ParentCriterionId = n
+	}
+	return nil
 }
 
 func (s *Longs) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
