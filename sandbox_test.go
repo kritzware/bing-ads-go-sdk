@@ -395,6 +395,82 @@ func TestAddAdGroupSandbox(t *testing.T) {
 	fmt.Println(res)
 }
 
+func TestBreakout(t *testing.T) {
+	svc := getTestClient()
+
+	camps, _ := svc.GetCampaignsByAccountId(Shopping)
+	var campid int64
+	for i := range camps {
+		if camps[i].Name == "sidecar-test-campaign" {
+			campid = camps[i].Id
+		}
+	}
+
+	var adgroup int64
+	ags, _ := svc.GetAdgroupsByCampaign(campid)
+	for i := range ags {
+		if ags[i].Name == "sidecar-test-adgroup" {
+			adgroup = ags[i].Id
+		}
+	}
+
+	crits, _ := svc.GetAdGroupCriterionsByIds(adgroup)
+	for i := range crits {
+		fmt.Printf("%#v\n", crits[i])
+	}
+
+	root := func() BiddableAdGroupCriterion {
+		for i := range crits {
+			if crits[i].Criterion.Condition.Attribute == "AAA" {
+				return crits[i]
+			}
+		}
+		return BiddableAdGroupCriterion{}
+	}()
+
+	a := BiddableAdGroupCriterion{
+		AdGroupId: adgroup,
+		Criterion: ProductPartition{
+			Condition:         ProductCondition{"valve", "Brand"},
+			ParentCriterionId: -500,
+			PartitionType:     "Unit",
+		},
+		CriterionBid: CriterionBid{
+			Amount: 0.05,
+		},
+	}
+
+	opp := BiddableAdGroupCriterion{
+		AdGroupId: adgroup,
+		Criterion: ProductPartition{
+			Condition:         ProductCondition{"", "Brand"},
+			ParentCriterionId: -500,
+			PartitionType:     "Unit",
+		},
+		CriterionBid: CriterionBid{
+			Amount: 0.05,
+		},
+	}
+
+	root.Criterion.PartitionType = "Subdivision"
+	newroot := root
+	newroot.Id = -500
+
+	ops := []AdGroupCriterionAction{
+		{"Delete", root},
+		{"Add", newroot},
+		{"Add", a},
+		{"Add", opp},
+	}
+
+	res, err := svc.ApplyProductPartitionActions(ops)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Println(res)
+
+}
+
 //TODO: DeleteCampaignCriterions
 func TestSandboxAddCampaignCriterions(t *testing.T) {
 	svc := getTestClient()
@@ -610,4 +686,28 @@ func TestSandboxRemoveItemsFromSharedList(t *testing.T) {
 		t.Errorf("expected 0 partial errors, got %d", len(deleteResponse.PartialErrors))
 	}
 
+}
+
+func TestUnmarshalPartitionResponseError(t *testing.T) {
+	b := (`<ApplyProductPartitionActionsResponse xmlns="https://bingads.microsoft.com/CampaignManagement/v11"><AdGroupCriterionIds xmlns:a="http://schemas.datacontract.org/2004/07/System" xmlns:i="http://www.w3.org/2001/XMLSchema-instance"><a:long i:nil="true"/><a:long i:nil="true"/></AdGroupCriterionIds><PartialErrors xmlns:i="http://www.w3.org/2001/XMLSchema-instance"><BatchError><Code>4150</Code><Details i:nil="true"/><ErrorCode>CampaignServiceRelatedProductPartitionActionError</ErrorCode><FieldPath i:nil="true"/><ForwardCompatibilityMap i:nil="true" xmlns:a="http://schemas.datacontract.org/2004/07/System.Collections.Generic"/><Index>0</Index><Message>Product partition action for the same ad group has an error.</Message><Type>BatchError</Type></BatchError><BatchError><Code>4133</Code><Details i:nil="true"/><ErrorCode>CampaignServiceCannotAddChildrenToProductPartitionUnit</ErrorCode><FieldPath>ProductConditions</FieldPath><ForwardCompatibilityMap i:nil="true" xmlns:a="http://schemas.datacontract.org/2004/07/System.Collections.Generic"/><Index>1</Index><Message>You can only add child nodes to a parent of type subdivision.</Message><Type>BatchError</Type></BatchError></PartialErrors></ApplyProductPartitionActionsResponse>`)
+
+	s := StringClient(envheader + b + envend)
+
+	svc := &CampaignService{
+		Endpoint: "https://campaign.api.sandbox.bingads.microsoft.com/Api/Advertiser/CampaignManagement/v11/CampaignManagementService.svc",
+		Session:  &Session{HTTPClient: s},
+	}
+
+	res, err := svc.ApplyProductPartitionActions(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(res.PartialErrors) != 2 {
+		t.Fatalf("expected 2 partial errors, got %d\n", len(res.PartialErrors))
+	}
+
+	for _, x := range res.PartialErrors {
+		fmt.Printf("%#v\n", x)
+	}
 }

@@ -185,7 +185,7 @@ func (c *ReportingService) PollGenerateReport(id string) (*ReportRequestStatus, 
 		ReportRequestId: id,
 		NS:              "https://bingads.microsoft.com/Reporting/v11",
 	}
-	resp, err := c.Session.reportRequest(req, reportingEndpoint, "PollGenerateReport")
+	resp, err := c.Session.reportRequest(req, c.Endpoint, "PollGenerateReport")
 	if err != nil {
 		return nil, err
 	}
@@ -203,7 +203,7 @@ func (c *ReportingService) SubmitReportRequest(rr interface{}) (string, error) {
 		ReportRequest: rr,
 		NS:            "https://bingads.microsoft.com/Reporting/v11",
 	}
-	resp, err := c.Session.reportRequest(req, reportingEndpoint, "SubmitGenerateReport")
+	resp, err := c.Session.reportRequest(req, c.Endpoint, "SubmitGenerateReport")
 
 	if err != nil {
 		return "", err
