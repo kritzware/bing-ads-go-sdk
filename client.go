@@ -8,19 +8,9 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"strings"
 
 	"golang.org/x/oauth2"
 )
-
-var AuthenticationTokenExpired = fmt.Errorf("AuthenticationTokenExpired")
-var InvalidCredentials = fmt.Errorf("InvalidCredentials")
-
-/*
-type Client interface {
-	SendRequest(interface{}, string, string) ([]byte, error)
-}
-*/
 
 type AuthHeader struct {
 	Action              string `xml:"https://adcenter.microsoft.com/v8 Action"`
@@ -33,106 +23,10 @@ type AuthHeader struct {
 	Password            string `xml:"https://adcenter.microsoft.com/v8 Password"`
 }
 
-type AdApiError struct {
-	Code      int64  `xml:"AdApiError>Code"`
-	Details   string `xml:"AdApiError>Details"`
-	ErrorCode string `xml:"AdApiError>ErrorCode"`
-	Message   string `xml:"AdApiError>Message"`
-}
-
-/*
-type BatchError struct {
-	Code      int64  `xml:"BatchError>Code"`
-	Details   string `xml:"BatchError>Details"`
-	ErrorCode string `xml:"BatchError>ErrorCode"`
-	Index     int64  `xml:"BatchError>Index"`
-	Message   string `xml:"BatchError>Message"`
-}
-*/
-
-type EditorialError struct {
-	Appealable       bool   `xml:"EditorialError>Appealable"`
-	Code             int64  `xml:"EditorialError>Code"`
-	DisapprovedText  string `xml:"EditorialError>DisapprovedText"`
-	ErrorCode        string `xml:"EditorialError>ErrorCode"`
-	Index            int64  `xml:"EditorialError>Index"`
-	Message          string `xml:"EditorialError>Message"`
-	PublisherCountry string `xml:"EditorialError>PublisherCountry"`
-}
-
-type GoalError struct {
-	BatchErrors []BatchError `xml:"GoalError>BatchErrors"`
-	Index       int64        `xml:"GoalError>Index"`
-	StepErrors  []BatchError `xml:"GoalError>StepErrors"`
-}
-
-type OperationError struct {
-	Code      int64  `xml:"OperationError>Code"`
-	Details   string `xml:"OperationError>Details"`
-	ErrorCode string `xml:"OperationError>ErrorCode"`
-	Message   string `xml:"OperationError>Message"`
-}
-type Fault struct {
-	FaultCode   string `xml:"faultcode"`
-	FaultString string `xml:"faultstring"`
-	Detail      struct {
-		XMLName xml.Name   `xml:"detail"`
-		Errors  ErrorsType `xml:",any"`
-	}
-}
-
-type ErrorsType struct {
-	TrackingId      string           `xml:"TrackingId"`
-	AdApiErrors     []AdApiError     `xml:"Errors"`
-	BatchErrors     []BatchError     `xml:"BatchErrors"`
-	EditorialErrors []EditorialError `xml:"EditorialErrors"`
-	GoalErrors      []GoalError      `xml:"GoalErrors"`
-	OperationErrors []OperationError `xml:"OperationErrors"`
-}
-
-func (f *ErrorsType) Error() string {
-	errors := []string{}
-	for _, e := range f.AdApiErrors {
-		errors = append(errors, fmt.Sprintf("%s", e.Message))
-	}
-	for _, e := range f.BatchErrors {
-		errors = append(errors, fmt.Sprintf("%s", e.Message))
-	}
-	for _, e := range f.EditorialErrors {
-		errors = append(errors, fmt.Sprintf("%s", e.Message))
-	}
-	for _, e := range f.GoalErrors {
-		for _, be := range e.BatchErrors {
-			errors = append(errors, fmt.Sprintf("%s", be.Message))
-		}
-		for _, be := range e.StepErrors {
-			errors = append(errors, fmt.Sprintf("%s", be.Message))
-		}
-	}
-	for _, e := range f.OperationErrors {
-		errors = append(errors, fmt.Sprintf("%s", e.Message))
-	}
-	return strings.Join(errors, "\n")
-}
-
 var debug = os.Getenv("BING_SDK_DEBUG")
 
 func (b *Session) SendRequest(body interface{}, endpoint string, soapAction string) ([]byte, error) {
-	var err error
-	var res []byte
-
-	for i := 0; i <= 1; i++ {
-		res, err = b.sendRequest(body, endpoint, soapAction, campaignns)
-
-		switch err {
-		case AuthenticationTokenExpired, InvalidCredentials:
-
-		default:
-			return res, err
-		}
-	}
-
-	return res, err
+	return b.sendRequest(body, endpoint, soapAction, campaignns)
 }
 
 var campaignns = "https://bingads.microsoft.com/CampaignManagement/v11"
@@ -224,13 +118,14 @@ func (b *Session) sendRequest(body interface{}, endpoint string, soapAction stri
 		}
 		for _, e := range fault.Detail.Errors.AdApiErrors {
 			switch e.ErrorCode {
-			case "AuthenticationTokenExpired":
-				return res.Body.OperationResponse, AuthenticationTokenExpired
-			case "InvalidCredentials":
-				return res.Body.OperationResponse, InvalidCredentials
+			case "AuthenticationTokenExpired", "InvalidCredentials", "InternalError", "CallRateExceeded":
+				return res.Body.OperationResponse, &baseError{
+					code:    e.ErrorCode,
+					origErr: &fault.Detail.Errors,
+				}
 			}
 		}
-		return res.Body.OperationResponse, &fault.Detail.Errors //errors
+		return res.Body.OperationResponse, &fault.Detail.Errors
 	}
 
 	return res.Body.OperationResponse, err

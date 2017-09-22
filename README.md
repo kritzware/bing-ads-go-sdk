@@ -19,3 +19,6 @@ WIP implementation of select features in Bing Ads' V11 API
 - GetSharedEntityAssociationsByEntityIds
 - GetSharedEntityAssociationsBySharedEntityIds
 - SetSharedEntityAssociations
+
+- PollGenerateReport
+- SubmitGenerateReport
