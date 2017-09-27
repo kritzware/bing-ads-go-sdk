@@ -9,8 +9,8 @@ type Bid struct {
 }
 
 type Date struct {
+	Day   int
 	Month int
-	Date  int
 	Year  int
 }
 

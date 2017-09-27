@@ -17,8 +17,6 @@ func NewReportingService(session *Session) *ReportingService {
 	}
 }
 
-var reportingEndpoint = "https://api.bingads.microsoft.com/Api/Advertiser/Reporting/v11/ReportingService.svc"
-
 /*
 Aggregation ::
 Summary
@@ -105,8 +103,8 @@ func (s ReportTime) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	if s.PredefinedTime != "" {
 		e.EncodeElement(s.PredefinedTime, st("PredefinedTime"))
 	} else {
-		e.EncodeElement(s.CustomDateRangeStart, st("CustomDateRangeStart"))
 		e.EncodeElement(s.CustomDateRangeEnd, st("CustomDateRangeEnd"))
+		e.EncodeElement(s.CustomDateRangeStart, st("CustomDateRangeStart"))
 	}
 	e.EncodeToken(start.End())
 	return nil
