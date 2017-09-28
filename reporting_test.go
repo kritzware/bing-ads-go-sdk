@@ -111,6 +111,93 @@ func TestReportProductDimensionWithCustomPeriod(t *testing.T) {
 	pollReport(t, svc, id)
 }
 
+func TestReportProductPartition(t *testing.T) {
+	svc := reportingService()
+	accountId, _ := strconv.ParseInt(svc.Session.AccountId, 10, 64)
+	rr := &ProductPartitionPerformanceReportRequest{
+		Scope: ReportScope{
+			AccountIds: Longs{
+				accountId,
+			},
+		},
+		Aggregation: "Daily",
+		Columns: []string{
+			"TimePeriod",
+			"AccountName",
+			"AccountNumber",
+			"AdGroupCriterionId",
+			"AdGroupId",
+			"AdGroupName",
+			"CampaignId",
+			"CampaignName",
+			"DeviceType",
+			"Impressions",
+			"ImpressionSharePercent",
+			"Clicks",
+			"Ctr",
+			"AverageCpc",
+			"Spend",
+			"Conversions",
+			"Revenue",
+			"PartitionType",
+			"ProductGroup",
+		},
+		Time: ReportTime{PredefinedTime: "LastMonth"},
+	}
+	id, err := svc.SubmitReportRequest(rr)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	svc = reportingService()
+	pollReport(t, svc, id)
+}
+
+func TestReportProductPartitionWithCustomPeriod(t *testing.T) {
+	now := time.Now()
+	lastMonth := now.AddDate(0, -1, 0)
+	svc := reportingService()
+	accountId, _ := strconv.ParseInt(svc.Session.AccountId, 10, 64)
+	rr := &ProductPartitionPerformanceReportRequest{
+		Scope: ReportScope{
+			AccountIds: Longs{accountId},
+		},
+		Aggregation: "Daily",
+		Columns: []string{
+			"TimePeriod",
+			"AccountName",
+			"AccountNumber",
+			"AdGroupCriterionId",
+			"AdGroupId",
+			"AdGroupName",
+			"CampaignId",
+			"CampaignName",
+			"DeviceType",
+			"Impressions",
+			"ImpressionSharePercent",
+			"Clicks",
+			"Ctr",
+			"AverageCpc",
+			"Spend",
+			"Conversions",
+			"Revenue",
+			"PartitionType",
+			"ProductGroup",
+		},
+		Time: ReportTime{
+			CustomDateRangeEnd:   Date{Year: now.Year(), Month: int(now.Month()), Day: now.Day()},
+			CustomDateRangeStart: Date{Year: lastMonth.Year(), Month: int(lastMonth.Month()), Day: lastMonth.Day()},
+		},
+	}
+	id, err := svc.SubmitReportRequest(rr)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	svc = reportingService()
+	pollReport(t, svc, id)
+}
+
 func TestReportAdGroup(t *testing.T) {
 	svc := reportingService()
 	accountId, _ := strconv.ParseInt(svc.Session.AccountId, 10, 64)
