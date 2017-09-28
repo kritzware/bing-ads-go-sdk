@@ -17,8 +17,6 @@ func NewReportingService(session *Session) *ReportingService {
 	}
 }
 
-var reportingEndpoint = "https://api.bingads.microsoft.com/Api/Advertiser/Reporting/v11/ReportingService.svc"
-
 /*
 Aggregation ::
 Summary
@@ -39,6 +37,7 @@ type PerformanceReportRequest struct {
 }
 
 type ProductDimensionPerformanceReportRequest PerformanceReportRequest
+type ProductPartitionPerformanceReportRequest PerformanceReportRequest
 type AdGroupPerformanceReportRequest PerformanceReportRequest
 
 type ReportScope struct {
@@ -105,8 +104,8 @@ func (s ReportTime) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	if s.PredefinedTime != "" {
 		e.EncodeElement(s.PredefinedTime, st("PredefinedTime"))
 	} else {
-		e.EncodeElement(s.CustomDateRangeStart, st("CustomDateRangeStart"))
 		e.EncodeElement(s.CustomDateRangeEnd, st("CustomDateRangeEnd"))
+		e.EncodeElement(s.CustomDateRangeStart, st("CustomDateRangeStart"))
 	}
 	e.EncodeToken(start.End())
 	return nil
@@ -115,6 +114,11 @@ func (s ReportTime) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 func (s *ProductDimensionPerformanceReportRequest) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	req := PerformanceReportRequest(*s)
 	return marshallPerformanceReportRequest(e, req, "ProductDimensionPerformanceReport")
+}
+
+func (s *ProductPartitionPerformanceReportRequest) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	req := PerformanceReportRequest(*s)
+	return marshallPerformanceReportRequest(e, req, "ProductPartitionPerformanceReport")
 }
 
 func (s *AdGroupPerformanceReportRequest) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
