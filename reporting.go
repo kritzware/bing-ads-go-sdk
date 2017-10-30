@@ -136,7 +136,7 @@ func (s PerformanceReportRequest) MarshalXML(e *xml.Encoder, start xml.StartElem
 func marshallPerformanceReportRequest(e *xml.Encoder, s PerformanceReportRequest, t string) error {
 	start := st("ReportRequest", "i:type", t+"Request")
 	e.EncodeToken(start)
-	excludes := []string{"ExcludeColumnHeaders", "ExcludeReportFooter", "ExcludeReportHeader"}
+	excludes := []string{"ExcludeReportFooter", "ExcludeReportHeader"}
 	for i := 0; i < len(excludes); i++ {
 		e.EncodeElement(true, st(excludes[i]))
 	}
