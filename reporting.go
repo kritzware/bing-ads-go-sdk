@@ -179,6 +179,7 @@ type PollGenerateReportResponse struct {
 	ReportRequestStatus ReportRequestStatus
 }
 
+//Status :: Error | Success | Pending
 type ReportRequestStatus struct {
 	ReportDownloadUrl string
 	Status            string

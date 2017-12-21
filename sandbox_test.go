@@ -471,6 +471,40 @@ func TestBreakout(t *testing.T) {
 
 }
 
+func TestSandboxUpdateCampaignCriterions(t *testing.T) {
+	svc := getTestClient()
+	crits, err := svc.GetCampaignCriterionsByIds(804004280)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Log(crits)
+
+	cs := []CampaignCriterion{
+		CampaignCriterion{
+			Type:       "BiddableCampaignCriterion",
+			CampaignId: 804004280,
+			Criterion: ProductScope{
+				Type: "ProductScope",
+				Conditions: []ProductCondition{
+					{Operand: "Brand", Attribute: "valve"},
+					{Operand: "ProductType1", Attribute: "hero"},
+					{Operand: "ProductType2", Attribute: "str"},
+					{Operand: "ProductType3", Attribute: "offlane"},
+				},
+				//	PartitionType: "Subdivision",
+			},
+			Status: "Active",
+			Id:     crits[0].Id,
+		},
+	}
+
+	if err := svc.UpdateCampaignCriterions("ProductScope", cs); err != nil {
+		t.Fatal(err)
+	}
+
+}
+
 //TODO: DeleteCampaignCriterions
 func TestSandboxAddCampaignCriterions(t *testing.T) {
 	svc := getTestClient()

@@ -6,6 +6,7 @@ import (
 	"strconv"
 )
 
+//ProductType1-5 | CategoryL1-5 | Id | Condition | Brand | CustomLabel0-4
 type ProductCondition struct {
 	Attribute string
 	Operand   string

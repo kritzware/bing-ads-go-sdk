@@ -134,6 +134,41 @@ type AddCampaignCriterionsResponse struct {
 	NestedPartialErrors  *BatchErrorCollection `xml:"NestedPartialErrors>BatchErrorCollection"`
 }
 
+type UpdateCampaignCriterionsRequest struct {
+	XMLName            xml.Name            `xml:"UpdateCampaignCriterionsRequest"`
+	NS                 string              `xml:"xmlns,attr"`
+	CampaignCriterions []CampaignCriterion `xml:"CampaignCriterions>CampaignCriterion"`
+	CriterionType      string
+}
+
+type UpdateCampaignCriterionsResponse struct {
+	NestedPartialErrors *BatchErrorCollection `xml:"NestedPartialErrors>BatchErrorCollection"`
+}
+
+func (c *CampaignService) UpdateCampaignCriterions(t string, cs []CampaignCriterion) error {
+	req := UpdateCampaignCriterionsRequest{
+		NS:                 "https://bingads.microsoft.com/CampaignManagement/v11",
+		CampaignCriterions: cs,
+		CriterionType:      t,
+	}
+	resp, err := c.Session.SendRequest(req, c.Endpoint, "UpdateCampaignCriterions")
+
+	if err != nil {
+		return err
+	}
+
+	ret := &UpdateCampaignCriterionsResponse{}
+	if err := xml.Unmarshal(resp, ret); err != nil {
+		return err
+	}
+
+	if ret.NestedPartialErrors != nil {
+		return ret.NestedPartialErrors
+	}
+
+	return nil
+}
+
 func (c *CampaignService) GetCampaignCriterionsByIds(campaign int64) ([]CampaignCriterion, error) {
 	req := GetCampaignCriterionsByIdsRequest{
 		NS:            "https://bingads.microsoft.com/CampaignManagement/v11",
