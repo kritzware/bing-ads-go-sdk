@@ -221,6 +221,6 @@ func (c *ReportingService) SubmitReportRequest(rr interface{}) (string, error) {
 		return "", err
 	}
 
-	return ret.ReportRequestId, nilg
+	return ret.ReportRequestId, nil
 
 }
