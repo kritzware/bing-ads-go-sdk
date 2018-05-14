@@ -745,3 +745,47 @@ func TestUnmarshalPartitionResponseError(t *testing.T) {
 		fmt.Printf("%#v\n", x)
 	}
 }
+
+func TestBulkFindAdgroupCampaign(t *testing.T) {
+	session := &Session{
+		AccountId:      os.Getenv("BING_ACCOUNT_ID"),
+		CustomerId:     os.Getenv("BING_CUSTOMER_ID"),
+		Username:       os.Getenv("BING_USERNAME"),
+		Password:       os.Getenv("BING_PASSWORD"),
+		DeveloperToken: os.Getenv("BING_DEV_TOKEN"),
+		HTTPClient:     &http.Client{},
+	}
+
+	bulk := &BulkService{
+		Endpoint: "https://bulk.api.sandbox.bingads.microsoft.com/Api/Advertiser/CampaignManagement/V11/BulkService.svc",
+		Session:  session,
+	}
+	svc := getTestClient()
+
+	camps, _ := svc.GetCampaignsByAccountId(Shopping)
+	var campid int64
+	for i := range camps {
+		if camps[i].Name == "sidecar-test-campaign" {
+			campid = camps[i].Id
+		}
+	}
+
+	var adgroup int64
+	ags, _ := svc.GetAdgroupsByCampaign(campid)
+	for i := range ags {
+		if ags[i].Name == "sidecar-test-adgroup" {
+			adgroup = ags[i].Id
+		}
+	}
+
+	found, err := bulk.GetAdGroupCampaign(adgroup)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if found != campid {
+		t.Errorf("expected campaignId: %d, found campaignId: %d\n", campid, found)
+	}
+
+	fmt.Println(adgroup, found)
+}
