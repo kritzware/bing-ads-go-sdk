@@ -20,7 +20,7 @@ func reportingService() *ReportingService {
 	}
 
 	return &ReportingService{
-		Endpoint: "https://reporting.api.sandbox.bingads.microsoft.com/Api/Advertiser/Reporting/v11/ReportingService.svc",
+		Endpoint: "https://reporting.api.sandbox.bingads.microsoft.com/Api/Advertiser/Reporting/v12/ReportingService.svc",
 		Session:  session,
 	}
 }

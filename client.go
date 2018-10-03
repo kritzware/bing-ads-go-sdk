@@ -29,8 +29,8 @@ func (b *Session) SendRequest(body interface{}, endpoint string, soapAction stri
 	return b.sendRequest(body, endpoint, soapAction, campaignns)
 }
 
-var campaignns = "https://bingads.microsoft.com/CampaignManagement/v11"
-var reportingns = "https://bingads.microsoft.com/Reporting/v11"
+var campaignns = "https://bingads.microsoft.com/CampaignManagement/v12"
+var reportingns = "https://bingads.microsoft.com/Reporting/v12"
 
 func (b *Session) reportRequest(body interface{}, endpoint string, soapAction string) ([]byte, error) {
 	return b.sendRequest(body, endpoint, soapAction, reportingns)
