@@ -2,11 +2,14 @@ package bingads
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"net/http"
 	"os"
 	"reflect"
 	"testing"
+
+	"golang.org/x/oauth2"
 )
 
 type BufferCloser struct {
@@ -357,13 +360,34 @@ func TestUnmarshalCampaignScope(t *testing.T) {
 }
 
 func getTestClient() *CampaignService {
+	//	client := &Session{
+	//		AccountId:      os.Getenv("BING_ACCOUNT_ID"),
+	//		CustomerId:     os.Getenv("BING_CUSTOMER_ID"),
+	//		Username:       os.Getenv("BING_USERNAME"),
+	//		Password:       os.Getenv("BING_PASSWORD"),
+	//		DeveloperToken: os.Getenv("BING_DEV_TOKEN"),
+	//		HTTPClient:     &http.Client{},
+	//	}
+
+	config := oauth2.Config{
+		ClientID:     os.Getenv("CLIENT_ID"),
+		ClientSecret: os.Getenv("CLIENT_SECRET"),
+		Endpoint: oauth2.Endpoint{
+			AuthURL:  "https://login.live-int.com/oauth20_token.srf",
+			TokenURL: "https://login.live-int.com/oauth20_token.srf",
+		},
+		RedirectURL: "https://localhost",
+	}
+
+	ts := config.TokenSource(context.TODO(), &oauth2.Token{
+		RefreshToken: os.Getenv("REFRESH_TOKEN"),
+	})
 	client := &Session{
 		AccountId:      os.Getenv("BING_ACCOUNT_ID"),
 		CustomerId:     os.Getenv("BING_CUSTOMER_ID"),
-		Username:       os.Getenv("BING_USERNAME"),
-		Password:       os.Getenv("BING_PASSWORD"),
 		DeveloperToken: os.Getenv("BING_DEV_TOKEN"),
 		HTTPClient:     &http.Client{},
+		TokenSource:    ts,
 	}
 
 	return &CampaignService{
