@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 
 	"golang.org/x/oauth2"
@@ -33,6 +34,17 @@ func (s StringClient) Do(req *http.Request) (*http.Response, error) {
 	return &http.Response{
 		Body: BufferCloser{bytes.NewBufferString(string(s))},
 	}, nil
+}
+
+func countPartialErrors(applied *ApplyProductPartitionActionsResponse) int {
+	failed := 0
+	for i := range applied.PartialErrors {
+		if applied.PartialErrors[i].Code == 4150 {
+			continue
+		}
+		failed++
+	}
+	return failed
 }
 
 func getIds(xs []NegativeKeywordList) []int64 {
@@ -326,17 +338,6 @@ func TestSandboxApplyProductPartitionActions(t *testing.T) {
 		{"Update", c},
 	}
 
-	countPartialErrors := func(applied *ApplyProductPartitionActionsResponse) int {
-		failed := 0
-		for i := range applied.PartialErrors {
-			if applied.PartialErrors[i].Code == 4150 {
-				continue
-			}
-			failed++
-		}
-		return failed
-	}
-
 	applied, err := svc.ApplyProductPartitionActions(actions)
 	if err != nil {
 		t.Fatal(err)
@@ -402,16 +403,7 @@ func getTestAdgroup(svc *CampaignService) (int64, error) {
 	return adgroup, nil
 }
 
-func getTestClient() *CampaignService {
-	//	client := &Session{
-	//		AccountId:      os.Getenv("BING_ACCOUNT_ID"),
-	//		CustomerId:     os.Getenv("BING_CUSTOMER_ID"),
-	//		Username:       os.Getenv("BING_USERNAME"),
-	//		Password:       os.Getenv("BING_PASSWORD"),
-	//		DeveloperToken: os.Getenv("BING_DEV_TOKEN"),
-	//		HTTPClient:     &http.Client{},
-	//	}
-
+func getTestSession() *Session {
 	config := oauth2.Config{
 		ClientID:     os.Getenv("CLIENT_ID"),
 		ClientSecret: os.Getenv("CLIENT_SECRET"),
@@ -425,7 +417,7 @@ func getTestClient() *CampaignService {
 	ts := config.TokenSource(context.TODO(), &oauth2.Token{
 		RefreshToken: os.Getenv("REFRESH_TOKEN"),
 	})
-	client := &Session{
+	return &Session{
 		AccountId:      os.Getenv("BING_ACCOUNT_ID"),
 		CustomerId:     os.Getenv("BING_CUSTOMER_ID"),
 		DeveloperToken: os.Getenv("BING_DEV_TOKEN"),
@@ -433,10 +425,11 @@ func getTestClient() *CampaignService {
 		TokenSource:    ts,
 	}
 
-	return &CampaignService{
-		Endpoint: "https://campaign.api.sandbox.bingads.microsoft.com/Api/Advertiser/CampaignManagement/v12/CampaignManagementService.svc",
-		Session:  client,
-	}
+}
+func getTestClient() *CampaignService {
+	svc := NewCampaignService(getTestSession())
+	svc.Endpoint = strings.Replace(svc.Endpoint, "bingads", "sandbox.bingads", 1)
+	return svc
 }
 
 func TestAddAdGroupSandbox(t *testing.T) {
@@ -815,21 +808,10 @@ func TestUnmarshalPartitionResponseError(t *testing.T) {
 	}
 }
 
-func TestBulkFindAdgroupCampaign(t *testing.T) {
-	session := &Session{
-		AccountId:      os.Getenv("BING_ACCOUNT_ID"),
-		CustomerId:     os.Getenv("BING_CUSTOMER_ID"),
-		Username:       os.Getenv("BING_USERNAME"),
-		Password:       os.Getenv("BING_PASSWORD"),
-		DeveloperToken: os.Getenv("BING_DEV_TOKEN"),
-		HTTPClient:     &http.Client{},
-	}
-
-	bulk := &BulkService{
-		Endpoint: "https://bulk.api.sandbox.bingads.microsoft.com/Api/Advertiser/CampaignManagement/V11/BulkService.svc",
-		Session:  session,
-	}
+func TestSandboxBulkFindAdgroupCampaign(t *testing.T) {
 	svc := getTestClient()
+	bulk := NewBulkService(getTestSession())
+	bulk.Endpoint = strings.Replace(bulk.Endpoint, "bingads", "sandbox.bingads", 1)
 
 	camps, _ := svc.GetCampaignsByAccountId(Shopping)
 	var campid int64

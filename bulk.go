@@ -18,7 +18,7 @@ type BulkService struct {
 
 func NewBulkService(session *Session) *BulkService {
 	return &BulkService{
-		Endpoint: "https://bulk.api.bingads.microsoft.com/Api/Advertiser/CampaignManagement/V11/BulkService.svc",
+		Endpoint: "https://bulk.api.bingads.microsoft.com/Api/Advertiser/CampaignManagement/V12/BulkService.svc",
 		Session:  session,
 	}
 }
@@ -55,7 +55,7 @@ func (c *BulkService) GetAdGroupCampaign(adgroup int64) (int64, error) {
 		},
 		CompressionType:  "Zip",
 		DownloadEntities: []string{"Campaigns", "AdGroups"},
-		FormatVersion:    "5.0",
+		FormatVersion:    "6.0",
 	}
 
 	resp, err := c.Session.SendRequest(req, c.Endpoint, "DownloadCampaignsByAccountIds")

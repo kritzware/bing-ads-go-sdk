@@ -1,28 +1,43 @@
 package bingads
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
+
+	"golang.org/x/oauth2"
 )
 
 func reportingService() *ReportingService {
+	config := oauth2.Config{
+		ClientID:     os.Getenv("CLIENT_ID"),
+		ClientSecret: os.Getenv("CLIENT_SECRET"),
+		Endpoint: oauth2.Endpoint{
+			AuthURL:  "https://login.live-int.com/oauth20_token.srf",
+			TokenURL: "https://login.live-int.com/oauth20_token.srf",
+		},
+		RedirectURL: "https://localhost",
+	}
+
+	ts := config.TokenSource(context.TODO(), &oauth2.Token{
+		RefreshToken: os.Getenv("REFRESH_TOKEN"),
+	})
 	session := &Session{
 		AccountId:      os.Getenv("BING_ACCOUNT_ID"),
 		CustomerId:     os.Getenv("BING_CUSTOMER_ID"),
-		Username:       os.Getenv("BING_USERNAME"),
-		Password:       os.Getenv("BING_PASSWORD"),
 		DeveloperToken: os.Getenv("BING_DEV_TOKEN"),
 		HTTPClient:     &http.Client{},
+		TokenSource:    ts,
 	}
 
-	return &ReportingService{
-		Endpoint: "https://reporting.api.sandbox.bingads.microsoft.com/Api/Advertiser/Reporting/v12/ReportingService.svc",
-		Session:  session,
-	}
+	svc := NewReportingService(session)
+	svc.Endpoint = strings.Replace(svc.Endpoint, "bingads", "sandbox.bingads", 1)
+	return svc
 }
 
 func TestReportProductDimension(t *testing.T) {

@@ -12,7 +12,7 @@ type ReportingService struct {
 
 func NewReportingService(session *Session) *ReportingService {
 	return &ReportingService{
-		Endpoint: "https://api.bingads.microsoft.com/Api/Advertiser/Reporting/v12/ReportingService.svc",
+		Endpoint: "https://reporting.api.bingads.microsoft.com/Api/Advertiser/Reporting/v12/ReportingService.svc",
 		Session:  session,
 	}
 }
