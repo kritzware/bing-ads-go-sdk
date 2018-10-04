@@ -188,7 +188,13 @@ func TestUnmarshalResponse(t *testing.T) {
 func TestSandboxApplyProductPartitionActions(t *testing.T) {
 	svc := getTestClient()
 
-	existing, err := svc.GetAdGroupCriterionsByIds(1167681348701053)
+	adgroup, err := getTestAdgroup(svc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Println(adgroup)
+
+	existing, err := svc.GetAdGroupCriterionsByIds(adgroup)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -197,35 +203,62 @@ func TestSandboxApplyProductPartitionActions(t *testing.T) {
 		t.Fatalf("expected all products root group to exist")
 	}
 
-	fmt.Println(existing)
+	for i := range existing {
+		fmt.Println(existing[i])
+	}
 
 	parentid := existing[0].Id
-
 	tomodifyid, err := func() (int64, error) {
 		for _, e := range existing {
 			if e.Criterion.Condition.Attribute == "str" {
 				return e.Id, nil
 			}
 		}
-		return 0, fmt.Errorf("expected existing str partition")
+
+		a := BiddableAdGroupCriterion{
+			AdGroupId: adgroup,
+			Criterion: ProductPartition{
+				Condition:         ProductCondition{"str", "ProductType1"},
+				ParentCriterionId: parentid,
+				PartitionType:     "Unit",
+			},
+			Status: "Active",
+			CriterionBid: CriterionBid{
+				Amount: 0.35,
+			},
+		}
+		actions := []AdGroupCriterionAction{
+			{"Add", a},
+		}
+
+		applied, err := svc.ApplyProductPartitionActions(actions)
+		if err != nil {
+			return 0, err
+		}
+
+		return applied.AdGroupCriterionIds[0], nil
 	}()
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	todelete, _ := func() (int64, error) {
+	todelete := func() []int64 {
+		var ret []int64
 		for _, e := range existing {
-			if e.Criterion.Condition.Attribute == "int" {
-				return e.Id, nil
+			switch e.Criterion.Condition.Attribute {
+			case "int":
+				ret = append(ret, e.Id)
 			}
 		}
-		return 0, fmt.Errorf("expected existing str partition")
+		return ret
 	}()
+
+	fmt.Println("todelete;", todelete)
 
 	cleanup := func(id int64) {
 		toremove := BiddableAdGroupCriterion{
-			AdGroupId: 1167681348701053,
+			AdGroupId: adgroup,
 			Id:        id,
 		}
 
@@ -242,12 +275,12 @@ func TestSandboxApplyProductPartitionActions(t *testing.T) {
 		}
 	}
 
-	if todelete != 0 {
-		cleanup(todelete)
+	for i := range todelete {
+		cleanup(todelete[i])
 	}
 
 	a := BiddableAdGroupCriterion{
-		AdGroupId: 1167681348701053,
+		AdGroupId: adgroup,
 		Criterion: ProductPartition{
 			Condition:         ProductCondition{"int", "ProductType1"},
 			ParentCriterionId: parentid,
@@ -260,7 +293,7 @@ func TestSandboxApplyProductPartitionActions(t *testing.T) {
 	}
 
 	b := BiddableAdGroupCriterion{
-		AdGroupId: 1159984767306214,
+		AdGroupId: adgroup,
 		Criterion: ProductPartition{
 			Condition:         ProductCondition{"str", "ProductType1"},
 			ParentCriterionId: parentid,
@@ -273,7 +306,7 @@ func TestSandboxApplyProductPartitionActions(t *testing.T) {
 	}
 
 	c := BiddableAdGroupCriterion{
-		AdGroupId: 1167681348701053,
+		AdGroupId: adgroup,
 		Id:        tomodifyid,
 		Criterion: ProductPartition{
 			Condition:         ProductCondition{"str", "ProductType1"},
@@ -286,11 +319,6 @@ func TestSandboxApplyProductPartitionActions(t *testing.T) {
 		},
 	}
 
-	expectedPartialFailures := map[int]bool{
-		0: true,
-		2: true,
-	}
-
 	actions := []AdGroupCriterionAction{
 		{"Add", b},
 		{"Add", a},
@@ -298,37 +326,26 @@ func TestSandboxApplyProductPartitionActions(t *testing.T) {
 		{"Update", c},
 	}
 
-	applied, err := svc.ApplyProductPartitionActions(actions)
-
-	if err != nil {
-		t.Error(err)
-	}
-
-	fmt.Println(applied)
-
-	successful := func() []int64 {
-		xs := []int64{}
-		for i := 0; i < len(applied.AdGroupCriterionIds); i++ {
-			if applied.AdGroupCriterionIds[i] > 0 {
-				xs = append(xs, applied.AdGroupCriterionIds[i])
+	countPartialErrors := func(applied *ApplyProductPartitionActionsResponse) int {
+		failed := 0
+		for i := range applied.PartialErrors {
+			if applied.PartialErrors[i].Code == 4150 {
+				continue
 			}
+			failed++
 		}
-		return xs
-	}()
-
-	expectedSuccessful := len(actions) - len(expectedPartialFailures)
-
-	if len(successful) != expectedSuccessful {
-		t.Errorf("expected %d created, got %d", expectedSuccessful, len(successful))
+		return failed
 	}
 
-	for _, failure := range applied.PartialErrors {
-		if !expectedPartialFailures[failure.Index] {
-			t.Errorf("unexpected partial failure at index %d", failure.Index)
-		}
+	applied, err := svc.ApplyProductPartitionActions(actions)
+	if err != nil {
+		t.Fatal(err)
 	}
 
-	cleanup(successful[0])
+	partialErrors := countPartialErrors(applied)
+	if partialErrors != 2 {
+		t.Errorf("expected 2 failures, got %d", partialErrors)
+	}
 }
 
 func TestUnmarshalCampaignScope(t *testing.T) {
@@ -357,6 +374,32 @@ func TestUnmarshalCampaignScope(t *testing.T) {
 	if !reflect.DeepEqual(res, expected) {
 		t.Errorf("expected %v, got %v", expected, res)
 	}
+}
+
+func getTestAdgroup(svc *CampaignService) (int64, error) {
+	camps, err := svc.GetCampaignsByAccountId(Shopping)
+	if err != nil {
+		return 0, err
+	}
+	var campid int64
+	for i := range camps {
+		if camps[i].Name == "sidecar-test-campaign" {
+			campid = camps[i].Id
+		}
+	}
+
+	var adgroup int64
+	ags, err := svc.GetAdgroupsByCampaign(campid)
+	if err != nil {
+		return 0, err
+	}
+	for i := range ags {
+		if ags[i].Name == "sidecar-test-adgroup" {
+			adgroup = ags[i].Id
+		}
+	}
+
+	return adgroup, nil
 }
 
 func getTestClient() *CampaignService {
@@ -674,14 +717,16 @@ func TestGetSandboxAdGroups(t *testing.T) {
 }
 
 func TestGetSandboxCriterion(t *testing.T) {
-	client := getTestClient()
-	res, err := client.GetAdGroupCriterionsByIds(1159984767305062)
-
+	svc := getTestClient()
+	adgroup, err := getTestAdgroup(svc)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	fmt.Println(res)
+	_, err = svc.GetAdGroupCriterionsByIds(adgroup)
+	if err != nil {
+		t.Fatal(err)
+	}
 }
 
 func TestUnmarshalAdgroupCriterions(t *testing.T) {
