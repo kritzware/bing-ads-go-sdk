@@ -225,7 +225,6 @@ func (s *Longs) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
 		skip = true
 	}
 	for token, err := dec.Token(); err == nil; token, err = dec.Token() {
-		fmt.Println(token)
 		if err != nil {
 			return err
 		}
