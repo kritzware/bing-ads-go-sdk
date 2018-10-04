@@ -220,7 +220,12 @@ func (s *ProductPartition) UnmarshalXML(dec *xml.Decoder, start xml.StartElement
 
 func (s *Longs) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
 	open := false
+	skip := false
+	if isNil, _ := findAttr(start.Attr, "nil"); isNil == "true" {
+		skip = true
+	}
 	for token, err := dec.Token(); err == nil; token, err = dec.Token() {
+		fmt.Println(token)
 		if err != nil {
 			return err
 		}
@@ -234,7 +239,8 @@ func (s *Longs) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
 			*s = append(*s, i)
 			open = true
 		case xml.EndElement:
-			if open == false {
+			//instead of skipping nils, replace with 0s, so we can map partial success ids
+			if open == false && !skip {
 				*s = append(*s, 0)
 			}
 			open = false
