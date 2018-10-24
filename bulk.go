@@ -18,7 +18,7 @@ type BulkService struct {
 
 func NewBulkService(session *Session) *BulkService {
 	return &BulkService{
-		Endpoint: "https://bulk.api.bingads.microsoft.com/Api/Advertiser/CampaignManagement/V11/BulkService.svc",
+		Endpoint: "https://bulk.api.bingads.microsoft.com/Api/Advertiser/CampaignManagement/V12/BulkService.svc",
 		Session:  session,
 	}
 }
@@ -48,14 +48,14 @@ type GetBulkDownloadStatusResponse struct {
 func (c *BulkService) GetAdGroupCampaign(adgroup int64) (int64, error) {
 	accountid, _ := strconv.ParseInt(c.Session.AccountId, 10, 64)
 	req := GetBulkCampaignsByAccountIdRequest{
-		NS: "https://bingads.microsoft.com/CampaignManagement/v11",
+		NS: "https://bingads.microsoft.com/CampaignManagement/v12",
 		AccountIds: BulkAccountIds{
 			NS:  "http://schemas.microsoft.com/2003/10/Serialization/Arrays",
 			Ids: []int64{accountid},
 		},
 		CompressionType:  "Zip",
 		DownloadEntities: []string{"Campaigns", "AdGroups"},
-		FormatVersion:    "5.0",
+		FormatVersion:    "6.0",
 	}
 
 	resp, err := c.Session.SendRequest(req, c.Endpoint, "DownloadCampaignsByAccountIds")
@@ -80,7 +80,7 @@ func (c *BulkService) GetAdGroupCampaign(adgroup int64) (int64, error) {
 
 	req2 := GetBulkDownloadStatusRequest{
 		RequestId: downloadresponse.DownloadRequestId,
-		NS:        "https://bingads.microsoft.com/CampaignManagement/v11",
+		NS:        "https://bingads.microsoft.com/CampaignManagement/v12",
 	}
 
 	url, err := func() (string, error) {

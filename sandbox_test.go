@@ -2,11 +2,15 @@ package bingads
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"net/http"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
+
+	"golang.org/x/oauth2"
 )
 
 type BufferCloser struct {
@@ -23,13 +27,24 @@ func (b BufferCloser) Read(p []byte) (int, error) {
 
 type StringClient string
 
-var envheader = `<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/"><s:Header><h:TrackingId xmlns:h="https://bingads.microsoft.com/CampaignManagement/v11">fc253ead-0334-4e2f-a4b9-35aa15203dd3</h:TrackingId></s:Header><s:Body>`
+var envheader = `<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/"><s:Header><h:TrackingId xmlns:h="https://bingads.microsoft.com/CampaignManagement/v12">fc253ead-0334-4e2f-a4b9-35aa15203dd3</h:TrackingId></s:Header><s:Body>`
 var envend = `</s:Body></s:Envelope>`
 
 func (s StringClient) Do(req *http.Request) (*http.Response, error) {
 	return &http.Response{
 		Body: BufferCloser{bytes.NewBufferString(string(s))},
 	}, nil
+}
+
+func countPartialErrors(applied *ApplyProductPartitionActionsResponse) int {
+	failed := 0
+	for i := range applied.PartialErrors {
+		if applied.PartialErrors[i].Code == 4150 {
+			continue
+		}
+		failed++
+	}
+	return failed
 }
 
 func getIds(xs []NegativeKeywordList) []int64 {
@@ -151,9 +166,9 @@ func TestSandboxGetSharedEntities(t *testing.T) {
 
 func TestUnmarshalResponse(t *testing.T) {
 
-	s := StringClient(envheader + `<ApplyProductPartitionActionsResponse xmlns="https://bingads.microsoft.com/CampaignManagement/v11"><AdGroupCriterionIds xmlns:a="http://schemas.datacontract.org/2004/07/System" xmlns:i="http://www.w3.org/2001/XMLSchema-instance"><a:long>1</a:long><a:long>2</a:long><a:long>3</a:long></AdGroupCriterionIds><PartialErrors xmlns:i="http://www.w3.org/2001/XMLSchema-instance"/></ApplyProductPartitionActionsResponse>` + envend)
+	s := StringClient(envheader + `<ApplyProductPartitionActionsResponse xmlns="https://bingads.microsoft.com/CampaignManagement/v12"><AdGroupCriterionIds xmlns:a="http://schemas.datacontract.org/2004/07/System" xmlns:i="http://www.w3.org/2001/XMLSchema-instance"><a:long>1</a:long><a:long>2</a:long><a:long>3</a:long></AdGroupCriterionIds><PartialErrors xmlns:i="http://www.w3.org/2001/XMLSchema-instance"/></ApplyProductPartitionActionsResponse>` + envend)
 	svc := &CampaignService{
-		Endpoint: "https://campaign.api.sandbox.bingads.microsoft.com/Api/Advertiser/CampaignManagement/v11/CampaignManagementService.svc",
+		Endpoint: "https://campaign.api.sandbox.bingads.microsoft.com/Api/Advertiser/CampaignManagement/v12/CampaignManagementService.svc",
 		Session:  &Session{HTTPClient: s},
 	}
 
@@ -166,9 +181,9 @@ func TestUnmarshalResponse(t *testing.T) {
 		t.Errorf("expected 3 ids, got %d", len(res.AdGroupCriterionIds))
 	}
 
-	s = StringClient(envheader + `<ApplyProductPartitionActionsResponse xmlns="https://bingads.microsoft.com/CampaignManagement/v11"><AdGroupCriterionIds xmlns:a="http://schemas.datacontract.org/2004/07/System" xmlns:i="http://www.w3.org/2001/XMLSchema-instance"><a:long i:nil="true"/></AdGroupCriterionIds><PartialErrors xmlns:i="http://www.w3.org/2001/XMLSchema-instance"><BatchError><Code>4129</Code><Details i:nil="true"/><ErrorCode>CampaignServiceDuplicateProductConditions</ErrorCode><FieldPath>ProductConditions</FieldPath><ForwardCompatibilityMap i:nil="true" xmlns:a="http://schemas.datacontract.org/2004/07/System.Collections.Generic"/><Index>0</Index><Message>Children of a product partition node cannot contain duplicate product conditions.</Message><Type>BatchError</Type></BatchError></PartialErrors></ApplyProductPartitionActionsResponse>` + envend)
+	s = StringClient(envheader + `<ApplyProductPartitionActionsResponse xmlns="https://bingads.microsoft.com/CampaignManagement/v12"><AdGroupCriterionIds xmlns:a="http://schemas.datacontract.org/2004/07/System" xmlns:i="http://www.w3.org/2001/XMLSchema-instance"><a:long i:nil="true"/></AdGroupCriterionIds><PartialErrors xmlns:i="http://www.w3.org/2001/XMLSchema-instance"><BatchError><Code>4129</Code><Details i:nil="true"/><ErrorCode>CampaignServiceDuplicateProductConditions</ErrorCode><FieldPath>ProductConditions</FieldPath><ForwardCompatibilityMap i:nil="true" xmlns:a="http://schemas.datacontract.org/2004/07/System.Collections.Generic"/><Index>0</Index><Message>Children of a product partition node cannot contain duplicate product conditions.</Message><Type>BatchError</Type></BatchError></PartialErrors></ApplyProductPartitionActionsResponse>` + envend)
 	svc = &CampaignService{
-		Endpoint: "https://campaign.api.sandbox.bingads.microsoft.com/Api/Advertiser/CampaignManagement/v11/CampaignManagementService.svc",
+		Endpoint: "https://campaign.api.sandbox.bingads.microsoft.com/Api/Advertiser/CampaignManagement/v12/CampaignManagementService.svc",
 		Session:  &Session{HTTPClient: s},
 	}
 
@@ -185,7 +200,13 @@ func TestUnmarshalResponse(t *testing.T) {
 func TestSandboxApplyProductPartitionActions(t *testing.T) {
 	svc := getTestClient()
 
-	existing, err := svc.GetAdGroupCriterionsByIds(1167681348701053)
+	adgroup, err := getTestAdgroup(svc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Println(adgroup)
+
+	existing, err := svc.GetAdGroupCriterionsByIds(adgroup)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -194,35 +215,62 @@ func TestSandboxApplyProductPartitionActions(t *testing.T) {
 		t.Fatalf("expected all products root group to exist")
 	}
 
-	fmt.Println(existing)
+	for i := range existing {
+		fmt.Println(existing[i])
+	}
 
 	parentid := existing[0].Id
-
 	tomodifyid, err := func() (int64, error) {
 		for _, e := range existing {
 			if e.Criterion.Condition.Attribute == "str" {
 				return e.Id, nil
 			}
 		}
-		return 0, fmt.Errorf("expected existing str partition")
+
+		a := BiddableAdGroupCriterion{
+			AdGroupId: adgroup,
+			Criterion: ProductPartition{
+				Condition:         ProductCondition{"str", "ProductType1"},
+				ParentCriterionId: parentid,
+				PartitionType:     "Unit",
+			},
+			Status: "Active",
+			CriterionBid: CriterionBid{
+				Amount: 0.35,
+			},
+		}
+		actions := []AdGroupCriterionAction{
+			{"Add", a},
+		}
+
+		applied, err := svc.ApplyProductPartitionActions(actions)
+		if err != nil {
+			return 0, err
+		}
+
+		return applied.AdGroupCriterionIds[0], nil
 	}()
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	todelete, _ := func() (int64, error) {
+	todelete := func() []int64 {
+		var ret []int64
 		for _, e := range existing {
-			if e.Criterion.Condition.Attribute == "int" {
-				return e.Id, nil
+			switch e.Criterion.Condition.Attribute {
+			case "int":
+				ret = append(ret, e.Id)
 			}
 		}
-		return 0, fmt.Errorf("expected existing str partition")
+		return ret
 	}()
+
+	fmt.Println("todelete;", todelete)
 
 	cleanup := func(id int64) {
 		toremove := BiddableAdGroupCriterion{
-			AdGroupId: 1167681348701053,
+			AdGroupId: adgroup,
 			Id:        id,
 		}
 
@@ -239,12 +287,12 @@ func TestSandboxApplyProductPartitionActions(t *testing.T) {
 		}
 	}
 
-	if todelete != 0 {
-		cleanup(todelete)
+	for i := range todelete {
+		cleanup(todelete[i])
 	}
 
 	a := BiddableAdGroupCriterion{
-		AdGroupId: 1167681348701053,
+		AdGroupId: adgroup,
 		Criterion: ProductPartition{
 			Condition:         ProductCondition{"int", "ProductType1"},
 			ParentCriterionId: parentid,
@@ -257,7 +305,7 @@ func TestSandboxApplyProductPartitionActions(t *testing.T) {
 	}
 
 	b := BiddableAdGroupCriterion{
-		AdGroupId: 1159984767306214,
+		AdGroupId: adgroup,
 		Criterion: ProductPartition{
 			Condition:         ProductCondition{"str", "ProductType1"},
 			ParentCriterionId: parentid,
@@ -270,7 +318,7 @@ func TestSandboxApplyProductPartitionActions(t *testing.T) {
 	}
 
 	c := BiddableAdGroupCriterion{
-		AdGroupId: 1167681348701053,
+		AdGroupId: adgroup,
 		Id:        tomodifyid,
 		Criterion: ProductPartition{
 			Condition:         ProductCondition{"str", "ProductType1"},
@@ -283,11 +331,6 @@ func TestSandboxApplyProductPartitionActions(t *testing.T) {
 		},
 	}
 
-	expectedPartialFailures := map[int]bool{
-		0: true,
-		2: true,
-	}
-
 	actions := []AdGroupCriterionAction{
 		{"Add", b},
 		{"Add", a},
@@ -296,40 +339,18 @@ func TestSandboxApplyProductPartitionActions(t *testing.T) {
 	}
 
 	applied, err := svc.ApplyProductPartitionActions(actions)
-
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
-	fmt.Println(applied)
-
-	successful := func() []int64 {
-		xs := []int64{}
-		for i := 0; i < len(applied.AdGroupCriterionIds); i++ {
-			if applied.AdGroupCriterionIds[i] > 0 {
-				xs = append(xs, applied.AdGroupCriterionIds[i])
-			}
-		}
-		return xs
-	}()
-
-	expectedSuccessful := len(actions) - len(expectedPartialFailures)
-
-	if len(successful) != expectedSuccessful {
-		t.Errorf("expected %d created, got %d", expectedSuccessful, len(successful))
+	partialErrors := countPartialErrors(applied)
+	if partialErrors != 2 {
+		t.Errorf("expected 2 failures, got %d", partialErrors)
 	}
-
-	for _, failure := range applied.PartialErrors {
-		if !expectedPartialFailures[failure.Index] {
-			t.Errorf("unexpected partial failure at index %d", failure.Index)
-		}
-	}
-
-	cleanup(successful[0])
 }
 
 func TestUnmarshalCampaignScope(t *testing.T) {
-	client := StringClient(envheader + `<GetCampaignCriterionsByIdsResponse xmlns="https://bingads.microsoft.com/CampaignManagement/v11"><CampaignCriterions xmlns:i="http://www.w3.org/2001/XMLSchema-instance"><CampaignCriterion i:type="BiddableCampaignCriterion"><CampaignId>283025743</CampaignId><Criterion i:type="ProductScope"><Type>ProductScope</Type><Conditions><ProductCondition><Attribute>top_brand</Attribute><Operand>CustomLabel0</Operand></ProductCondition></Conditions></Criterion><ForwardCompatibilityMap i:nil="true" xmlns:a="http://schemas.datacontract.org/2004/07/System.Collections.Generic"/><Id>840001008</Id><Status i:nil="true"/><Type>BiddableCampaignCriterion</Type><CriterionBid i:nil="true"/></CampaignCriterion></CampaignCriterions><PartialErrors i:nil="true" xmlns:i="http://www.w3.org/2001/XMLSchema-instance"/></GetCampaignCriterionsByIdsResponse>` + envend)
+	client := StringClient(envheader + `<GetCampaignCriterionsByIdsResponse xmlns="https://bingads.microsoft.com/CampaignManagement/v12"><CampaignCriterions xmlns:i="http://www.w3.org/2001/XMLSchema-instance"><CampaignCriterion i:type="BiddableCampaignCriterion"><CampaignId>283025743</CampaignId><Criterion i:type="ProductScope"><Type>ProductScope</Type><Conditions><ProductCondition><Attribute>top_brand</Attribute><Operand>CustomLabel0</Operand></ProductCondition></Conditions></Criterion><ForwardCompatibilityMap i:nil="true" xmlns:a="http://schemas.datacontract.org/2004/07/System.Collections.Generic"/><Id>840001008</Id><Status i:nil="true"/><Type>BiddableCampaignCriterion</Type><CriterionBid i:nil="true"/></CampaignCriterion></CampaignCriterions><PartialErrors i:nil="true" xmlns:i="http://www.w3.org/2001/XMLSchema-instance"/></GetCampaignCriterionsByIdsResponse>` + envend)
 	s := &CampaignService{
 		Session: &Session{HTTPClient: client},
 	}
@@ -356,20 +377,59 @@ func TestUnmarshalCampaignScope(t *testing.T) {
 	}
 }
 
-func getTestClient() *CampaignService {
-	client := &Session{
-		AccountId:      os.Getenv("BING_ACCOUNT_ID"),
-		CustomerId:     os.Getenv("BING_CUSTOMER_ID"),
-		Username:       os.Getenv("BING_USERNAME"),
-		Password:       os.Getenv("BING_PASSWORD"),
-		DeveloperToken: os.Getenv("BING_DEV_TOKEN"),
-		HTTPClient:     &http.Client{},
+func getTestAdgroup(svc *CampaignService) (int64, error) {
+	camps, err := svc.GetCampaignsByAccountId(Shopping)
+	if err != nil {
+		return 0, err
+	}
+	var campid int64
+	for i := range camps {
+		if camps[i].Name == "sidecar-test-campaign" {
+			campid = camps[i].Id
+		}
 	}
 
-	return &CampaignService{
-		Endpoint: "https://campaign.api.sandbox.bingads.microsoft.com/Api/Advertiser/CampaignManagement/v11/CampaignManagementService.svc",
-		Session:  client,
+	var adgroup int64
+	ags, err := svc.GetAdgroupsByCampaign(campid)
+	if err != nil {
+		return 0, err
 	}
+	for i := range ags {
+		if ags[i].Name == "sidecar-test-adgroup" {
+			adgroup = ags[i].Id
+		}
+	}
+
+	return adgroup, nil
+}
+
+func getTestSession() *Session {
+	config := oauth2.Config{
+		ClientID:     os.Getenv("CLIENT_ID"),
+		ClientSecret: os.Getenv("CLIENT_SECRET"),
+		Endpoint: oauth2.Endpoint{
+			AuthURL:  "https://login.live-int.com/oauth20_token.srf",
+			TokenURL: "https://login.live-int.com/oauth20_token.srf",
+		},
+		RedirectURL: "https://localhost",
+	}
+
+	ts := config.TokenSource(context.TODO(), &oauth2.Token{
+		RefreshToken: os.Getenv("REFRESH_TOKEN"),
+	})
+	return &Session{
+		AccountId:      os.Getenv("BING_ACCOUNT_ID"),
+		CustomerId:     os.Getenv("BING_CUSTOMER_ID"),
+		DeveloperToken: os.Getenv("BING_DEV_TOKEN"),
+		HTTPClient:     &http.Client{},
+		TokenSource:    ts,
+	}
+
+}
+func getTestClient() *CampaignService {
+	svc := NewCampaignService(getTestSession())
+	svc.Endpoint = strings.Replace(svc.Endpoint, "bingads", "sandbox.bingads", 1)
+	return svc
 }
 
 func TestAddAdGroupSandbox(t *testing.T) {
@@ -600,12 +660,12 @@ func TestSandboxAddCampaignsAndDupeAdd(t *testing.T) {
 }
 
 //addcampaignerror
-//<AddCampaignsResponse xmlns="https://bingads.microsoft.com/CampaignManagement/v11"><CampaignIds xmlns:a="http://schemas.datacontract.org/2004/07/System" xmlns:i="http://www.w3.org/2001/XMLSchema-instance"><a:long i:nil="true"/></CampaignIds><PartialErrors xmlns:i="http://www.w3.org/2001/XMLSchema-instance"><BatchError><Code>1154</Code><Details i:nil="true"/><ErrorCode>CampaignServiceCampaignShoppingCampaignStoreIdInvalid</ErrorCode><FieldPath i:nil="true"/><ForwardCompatibilityMap i:nil="true" xmlns:a="http://schemas.datacontract.org/2004/07/System.Collections.Generic"/><Index>0</Index><Message>The store ID of the shopping campaign is invalid.</Message><Type>BatchError</Type></BatchError></PartialErrors></AddCampaignsResponse>
+//<AddCampaignsResponse xmlns="https://bingads.microsoft.com/CampaignManagement/v12"><CampaignIds xmlns:a="http://schemas.datacontract.org/2004/07/System" xmlns:i="http://www.w3.org/2001/XMLSchema-instance"><a:long i:nil="true"/></CampaignIds><PartialErrors xmlns:i="http://www.w3.org/2001/XMLSchema-instance"><BatchError><Code>1154</Code><Details i:nil="true"/><ErrorCode>CampaignServiceCampaignShoppingCampaignStoreIdInvalid</ErrorCode><FieldPath i:nil="true"/><ForwardCompatibilityMap i:nil="true" xmlns:a="http://schemas.datacontract.org/2004/07/System.Collections.Generic"/><Index>0</Index><Message>The store ID of the shopping campaign is invalid.</Message><Type>BatchError</Type></BatchError></PartialErrors></AddCampaignsResponse>
 
 func TestUnmarshalCampaigns(t *testing.T) {
-	client := StringClient(envheader + `<GetCampaignsByAccountIdResponse xmlns="https://bingads.microsoft.com/CampaignManagement/v11"><Campaigns xmlns:i="http://www.w3.org/2001/XMLSchema-instance"><Campaign><BiddingScheme i:type="ManualCpcBiddingScheme"><Type>ManualCpc</Type></BiddingScheme><BudgetType>DailyBudgetStandard</BudgetType><DailyBudget>25</DailyBudget><Description>dota2</Description><Id>804002264</Id><Name>dota2</Name><NativeBidAdjustment i:nil="true"/><Status>Active</Status><TimeZone>EasternTimeUSCanada</TimeZone><TrackingUrlTemplate i:nil="true"/><CampaignType>Shopping</CampaignType><Settings><Setting i:type="ShoppingSetting"><Type>ShoppingSetting</Type><LocalInventoryAdsEnabled i:nil="true"/><Priority>0</Priority><SalesCountryCode>US</SalesCountryCode><StoreId>1387210</StoreId></Setting></Settings><BudgetId i:nil="true"/><Languages i:nil="true" xmlns:a="http://schemas.microsoft.com/2003/10/Serialization/Arrays"/></Campaign></Campaigns></GetCampaignsByAccountIdResponse>` + envend)
+	client := StringClient(envheader + `<GetCampaignsByAccountIdResponse xmlns="https://bingads.microsoft.com/CampaignManagement/v12"><Campaigns xmlns:i="http://www.w3.org/2001/XMLSchema-instance"><Campaign><BiddingScheme i:type="ManualCpcBiddingScheme"><Type>ManualCpc</Type></BiddingScheme><BudgetType>DailyBudgetStandard</BudgetType><DailyBudget>25</DailyBudget><Description>dota2</Description><Id>804002264</Id><Name>dota2</Name><NativeBidAdjustment i:nil="true"/><Status>Active</Status><TimeZone>EasternTimeUSCanada</TimeZone><TrackingUrlTemplate i:nil="true"/><CampaignType>Shopping</CampaignType><Settings><Setting i:type="ShoppingSetting"><Type>ShoppingSetting</Type><LocalInventoryAdsEnabled i:nil="true"/><Priority>0</Priority><SalesCountryCode>US</SalesCountryCode><StoreId>1387210</StoreId></Setting></Settings><BudgetId i:nil="true"/><Languages i:nil="true" xmlns:a="http://schemas.microsoft.com/2003/10/Serialization/Arrays"/></Campaign></Campaigns></GetCampaignsByAccountIdResponse>` + envend)
 	svc := &CampaignService{
-		Endpoint: "https://campaign.api.sandbox.bingads.microsoft.com/Api/Advertiser/CampaignManagement/v11/CampaignManagementService.svc",
+		Endpoint: "https://campaign.api.sandbox.bingads.microsoft.com/Api/Advertiser/CampaignManagement/v12/CampaignManagementService.svc",
 		Session:  &Session{HTTPClient: client},
 	}
 
@@ -650,21 +710,23 @@ func TestGetSandboxAdGroups(t *testing.T) {
 }
 
 func TestGetSandboxCriterion(t *testing.T) {
-	client := getTestClient()
-	res, err := client.GetAdGroupCriterionsByIds(1159984767305062)
-
+	svc := getTestClient()
+	adgroup, err := getTestAdgroup(svc)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	fmt.Println(res)
+	_, err = svc.GetAdGroupCriterionsByIds(adgroup)
+	if err != nil {
+		t.Fatal(err)
+	}
 }
 
 func TestUnmarshalAdgroupCriterions(t *testing.T) {
-	s := StringClient(envheader + `<GetAdGroupCriterionsByIdsResponse xmlns="https://bingads.microsoft.com/CampaignManagement/v11"><AdGroupCriterions xmlns:i="http://www.w3.org/2001/XMLSchema-instance"><AdGroupCriterion i:type="BiddableAdGroupCriterion"><AdGroupId>1159984767305062</AdGroupId><Criterion i:type="ProductPartition"><Type>ProductPartition</Type><Condition><Attribute/><Operand>All</Operand></Condition><ParentCriterionId i:nil="true"/><PartitionType>Subdivision</PartitionType></Criterion><Id>4576098675327012</Id><Status>Active</Status><Type>BiddableAdGroupCriterion</Type><CriterionBid i:nil="true"/><DestinationUrl i:nil="true"/><EditorialStatus i:nil="true"/><FinalAppUrls i:nil="true" xmlns:a="http://schemas.datacontract.org/2004/07/Microsoft.AdCenter.Advertiser.CampaignManagement.Api.DataContracts.V11"/><FinalMobileUrls i:nil="true" xmlns:a="http://schemas.microsoft.com/2003/10/Serialization/Arrays"/><FinalUrls i:nil="true" xmlns:a="http://schemas.microsoft.com/2003/10/Serialization/Arrays"/><TrackingUrlTemplate i:nil="true"/><UrlCustomParameters i:nil="true" xmlns:a="http://schemas.datacontract.org/2004/07/Microsoft.AdCenter.Advertiser.CampaignManagement.Api.DataContracts.V11"/></AdGroupCriterion><AdGroupCriterion i:type="BiddableAdGroupCriterion"><AdGroupId>1159984767305062</AdGroupId><Criterion i:type="ProductPartition"><Type>ProductPartition</Type><Condition><Attribute>agi</Attribute><Operand>ProductType1</Operand></Condition><ParentCriterionId>4576098675327012</ParentCriterionId><PartitionType>Unit</PartitionType></Criterion><Id>4576098675327013</Id><Status>Active</Status><Type>BiddableAdGroupCriterion</Type><CriterionBid i:type="FixedBid"><Type>FixedBid</Type><Amount>1</Amount></CriterionBid><DestinationUrl i:nil="true"/><EditorialStatus i:nil="true"/><FinalAppUrls i:nil="true" xmlns:a="http://schemas.datacontract.org/2004/07/Microsoft.AdCenter.Advertiser.CampaignManagement.Api.DataContracts.V11"/><FinalMobileUrls i:nil="true" xmlns:a="http://schemas.microsoft.com/2003/10/Serialization/Arrays"/><FinalUrls i:nil="true" xmlns:a="http://schemas.microsoft.com/2003/10/Serialization/Arrays"/><TrackingUrlTemplate i:nil="true"/><UrlCustomParameters i:nil="true" xmlns:a="http://schemas.datacontract.org/2004/07/Microsoft.AdCenter.Advertiser.CampaignManagement.Api.DataContracts.V11"/></AdGroupCriterion><AdGroupCriterion i:type="BiddableAdGroupCriterion"><AdGroupId>1159984767305062</AdGroupId><Criterion i:type="ProductPartition"><Type>ProductPartition</Type><Condition><Attribute>int</Attribute><Operand>ProductType1</Operand></Condition><ParentCriterionId>4576098675327012</ParentCriterionId><PartitionType>Unit</PartitionType></Criterion><Id>4576098675327014</Id><Status>Active</Status><Type>BiddableAdGroupCriterion</Type><CriterionBid i:type="FixedBid"><Type>FixedBid</Type><Amount>1</Amount></CriterionBid><DestinationUrl i:nil="true"/><EditorialStatus i:nil="true"/><FinalAppUrls i:nil="true" xmlns:a="http://schemas.datacontract.org/2004/07/Microsoft.AdCenter.Advertiser.CampaignManagement.Api.DataContracts.V11"/><FinalMobileUrls i:nil="true" xmlns:a="http://schemas.microsoft.com/2003/10/Serialization/Arrays"/><FinalUrls i:nil="true" xmlns:a="http://schemas.microsoft.com/2003/10/Serialization/Arrays"/><TrackingUrlTemplate i:nil="true"/><UrlCustomParameters i:nil="true" xmlns:a="http://schemas.datacontract.org/2004/07/Microsoft.AdCenter.Advertiser.CampaignManagement.Api.DataContracts.V11"/></AdGroupCriterion><AdGroupCriterion i:type="BiddableAdGroupCriterion"><AdGroupId>1159984767305062</AdGroupId><Criterion i:type="ProductPartition"><Type>ProductPartition</Type><Condition><Attribute>str</Attribute><Operand>ProductType1</Operand></Condition><ParentCriterionId>4576098675327012</ParentCriterionId><PartitionType>Unit</PartitionType></Criterion><Id>4576098675327015</Id><Status>Active</Status><Type>BiddableAdGroupCriterion</Type><CriterionBid i:type="FixedBid"><Type>FixedBid</Type><Amount>1</Amount></CriterionBid><DestinationUrl i:nil="true"/><EditorialStatus i:nil="true"/><FinalAppUrls i:nil="true" xmlns:a="http://schemas.datacontract.org/2004/07/Microsoft.AdCenter.Advertiser.CampaignManagement.Api.DataContracts.V11"/><FinalMobileUrls i:nil="true" xmlns:a="http://schemas.microsoft.com/2003/10/Serialization/Arrays"/><FinalUrls i:nil="true" xmlns:a="http://schemas.microsoft.com/2003/10/Serialization/Arrays"/><TrackingUrlTemplate i:nil="true"/><UrlCustomParameters i:nil="true" xmlns:a="http:/  chemas.datacontract.org/2004/07/Microsoft.AdCenter.Advertiser.CampaignManagement.Api.DataContracts.V11"/></AdGroupCriterion><AdGroupCriterion i:type="BiddableAdGroupCriterion"><AdGroupId>1159984767305062</AdGroupId><Criterion i:type="ProductPartition"><Type>ProductPartition</Type><Condition><Attribute/><Operand>ProductType1</Operand></Condition><ParentCriterionId>4576098675327012</ParentCriterionId><PartitionType>Unit</PartitionType></Criterion><Id>4576098675327016</Id><Status>Active</Status><Type>BiddableAdGroupCriterion</Type><CriterionBid i:type="FixedBid"><Type>FixedBid</Type><Amount>1</Amount></CriterionBid><DestinationUrl i:nil="true"/><EditorialStatus i:nil="true"/><FinalAppUrls i:nil="true" xmlns:a="http://schemas.datacontract.org/2004/07/Microsoft.AdCenter.Advertiser.CampaignManagement.Api.DataContracts.V11"/><FinalMobileUrls i:nil="true" xmlns:a="http://schemas.microsoft.com/2003/10/Serialization/Arrays"/><FinalUrls i:nil="true" xmlns:a="http://schemas.microsoft.com/2003/10/Serialization/Arrays"/><TrackingUrlTemplate i:nil="true"/><UrlCustomParameters i:nil="true" xmlns:a="http://schemas.datacontract.org/2004/07/Microsoft.AdCenter.Advertiser.CampaignManagement.Api.DataContracts.V11"/></AdGroupCriterion></AdGroupCriterions></GetAdGroupCriterionsByIdsResponse>` + envend)
+	s := StringClient(envheader + `<GetAdGroupCriterionsByIdsResponse xmlns="https://bingads.microsoft.com/CampaignManagement/v12"><AdGroupCriterions xmlns:i="http://www.w3.org/2001/XMLSchema-instance"><AdGroupCriterion i:type="BiddableAdGroupCriterion"><AdGroupId>1159984767305062</AdGroupId><Criterion i:type="ProductPartition"><Type>ProductPartition</Type><Condition><Attribute/><Operand>All</Operand></Condition><ParentCriterionId i:nil="true"/><PartitionType>Subdivision</PartitionType></Criterion><Id>4576098675327012</Id><Status>Active</Status><Type>BiddableAdGroupCriterion</Type><CriterionBid i:nil="true"/><DestinationUrl i:nil="true"/><EditorialStatus i:nil="true"/><FinalAppUrls i:nil="true" xmlns:a="http://schemas.datacontract.org/2004/07/Microsoft.AdCenter.Advertiser.CampaignManagement.Api.DataContracts.V11"/><FinalMobileUrls i:nil="true" xmlns:a="http://schemas.microsoft.com/2003/10/Serialization/Arrays"/><FinalUrls i:nil="true" xmlns:a="http://schemas.microsoft.com/2003/10/Serialization/Arrays"/><TrackingUrlTemplate i:nil="true"/><UrlCustomParameters i:nil="true" xmlns:a="http://schemas.datacontract.org/2004/07/Microsoft.AdCenter.Advertiser.CampaignManagement.Api.DataContracts.V11"/></AdGroupCriterion><AdGroupCriterion i:type="BiddableAdGroupCriterion"><AdGroupId>1159984767305062</AdGroupId><Criterion i:type="ProductPartition"><Type>ProductPartition</Type><Condition><Attribute>agi</Attribute><Operand>ProductType1</Operand></Condition><ParentCriterionId>4576098675327012</ParentCriterionId><PartitionType>Unit</PartitionType></Criterion><Id>4576098675327013</Id><Status>Active</Status><Type>BiddableAdGroupCriterion</Type><CriterionBid i:type="FixedBid"><Type>FixedBid</Type><Amount>1</Amount></CriterionBid><DestinationUrl i:nil="true"/><EditorialStatus i:nil="true"/><FinalAppUrls i:nil="true" xmlns:a="http://schemas.datacontract.org/2004/07/Microsoft.AdCenter.Advertiser.CampaignManagement.Api.DataContracts.V11"/><FinalMobileUrls i:nil="true" xmlns:a="http://schemas.microsoft.com/2003/10/Serialization/Arrays"/><FinalUrls i:nil="true" xmlns:a="http://schemas.microsoft.com/2003/10/Serialization/Arrays"/><TrackingUrlTemplate i:nil="true"/><UrlCustomParameters i:nil="true" xmlns:a="http://schemas.datacontract.org/2004/07/Microsoft.AdCenter.Advertiser.CampaignManagement.Api.DataContracts.V11"/></AdGroupCriterion><AdGroupCriterion i:type="BiddableAdGroupCriterion"><AdGroupId>1159984767305062</AdGroupId><Criterion i:type="ProductPartition"><Type>ProductPartition</Type><Condition><Attribute>int</Attribute><Operand>ProductType1</Operand></Condition><ParentCriterionId>4576098675327012</ParentCriterionId><PartitionType>Unit</PartitionType></Criterion><Id>4576098675327014</Id><Status>Active</Status><Type>BiddableAdGroupCriterion</Type><CriterionBid i:type="FixedBid"><Type>FixedBid</Type><Amount>1</Amount></CriterionBid><DestinationUrl i:nil="true"/><EditorialStatus i:nil="true"/><FinalAppUrls i:nil="true" xmlns:a="http://schemas.datacontract.org/2004/07/Microsoft.AdCenter.Advertiser.CampaignManagement.Api.DataContracts.V11"/><FinalMobileUrls i:nil="true" xmlns:a="http://schemas.microsoft.com/2003/10/Serialization/Arrays"/><FinalUrls i:nil="true" xmlns:a="http://schemas.microsoft.com/2003/10/Serialization/Arrays"/><TrackingUrlTemplate i:nil="true"/><UrlCustomParameters i:nil="true" xmlns:a="http://schemas.datacontract.org/2004/07/Microsoft.AdCenter.Advertiser.CampaignManagement.Api.DataContracts.V11"/></AdGroupCriterion><AdGroupCriterion i:type="BiddableAdGroupCriterion"><AdGroupId>1159984767305062</AdGroupId><Criterion i:type="ProductPartition"><Type>ProductPartition</Type><Condition><Attribute>str</Attribute><Operand>ProductType1</Operand></Condition><ParentCriterionId>4576098675327012</ParentCriterionId><PartitionType>Unit</PartitionType></Criterion><Id>4576098675327015</Id><Status>Active</Status><Type>BiddableAdGroupCriterion</Type><CriterionBid i:type="FixedBid"><Type>FixedBid</Type><Amount>1</Amount></CriterionBid><DestinationUrl i:nil="true"/><EditorialStatus i:nil="true"/><FinalAppUrls i:nil="true" xmlns:a="http://schemas.datacontract.org/2004/07/Microsoft.AdCenter.Advertiser.CampaignManagement.Api.DataContracts.V11"/><FinalMobileUrls i:nil="true" xmlns:a="http://schemas.microsoft.com/2003/10/Serialization/Arrays"/><FinalUrls i:nil="true" xmlns:a="http://schemas.microsoft.com/2003/10/Serialization/Arrays"/><TrackingUrlTemplate i:nil="true"/><UrlCustomParameters i:nil="true" xmlns:a="http:/  chemas.datacontract.org/2004/07/Microsoft.AdCenter.Advertiser.CampaignManagement.Api.DataContracts.V11"/></AdGroupCriterion><AdGroupCriterion i:type="BiddableAdGroupCriterion"><AdGroupId>1159984767305062</AdGroupId><Criterion i:type="ProductPartition"><Type>ProductPartition</Type><Condition><Attribute/><Operand>ProductType1</Operand></Condition><ParentCriterionId>4576098675327012</ParentCriterionId><PartitionType>Unit</PartitionType></Criterion><Id>4576098675327016</Id><Status>Active</Status><Type>BiddableAdGroupCriterion</Type><CriterionBid i:type="FixedBid"><Type>FixedBid</Type><Amount>1</Amount></CriterionBid><DestinationUrl i:nil="true"/><EditorialStatus i:nil="true"/><FinalAppUrls i:nil="true" xmlns:a="http://schemas.datacontract.org/2004/07/Microsoft.AdCenter.Advertiser.CampaignManagement.Api.DataContracts.V11"/><FinalMobileUrls i:nil="true" xmlns:a="http://schemas.microsoft.com/2003/10/Serialization/Arrays"/><FinalUrls i:nil="true" xmlns:a="http://schemas.microsoft.com/2003/10/Serialization/Arrays"/><TrackingUrlTemplate i:nil="true"/><UrlCustomParameters i:nil="true" xmlns:a="http://schemas.datacontract.org/2004/07/Microsoft.AdCenter.Advertiser.CampaignManagement.Api.DataContracts.V11"/></AdGroupCriterion></AdGroupCriterions></GetAdGroupCriterionsByIdsResponse>` + envend)
 
 	svc := &CampaignService{
-		Endpoint: "https://campaign.api.sandbox.bingads.microsoft.com/Api/Advertiser/CampaignManagement/v11/CampaignManagementService.svc",
+		Endpoint: "https://campaign.api.sandbox.bingads.microsoft.com/Api/Advertiser/CampaignManagement/v12/CampaignManagementService.svc",
 		Session:  &Session{HTTPClient: s},
 	}
 
@@ -723,12 +785,12 @@ func TestSandboxRemoveItemsFromSharedList(t *testing.T) {
 }
 
 func TestUnmarshalPartitionResponseError(t *testing.T) {
-	b := (`<ApplyProductPartitionActionsResponse xmlns="https://bingads.microsoft.com/CampaignManagement/v11"><AdGroupCriterionIds xmlns:a="http://schemas.datacontract.org/2004/07/System" xmlns:i="http://www.w3.org/2001/XMLSchema-instance"><a:long i:nil="true"/><a:long i:nil="true"/></AdGroupCriterionIds><PartialErrors xmlns:i="http://www.w3.org/2001/XMLSchema-instance"><BatchError><Code>4150</Code><Details i:nil="true"/><ErrorCode>CampaignServiceRelatedProductPartitionActionError</ErrorCode><FieldPath i:nil="true"/><ForwardCompatibilityMap i:nil="true" xmlns:a="http://schemas.datacontract.org/2004/07/System.Collections.Generic"/><Index>0</Index><Message>Product partition action for the same ad group has an error.</Message><Type>BatchError</Type></BatchError><BatchError><Code>4133</Code><Details i:nil="true"/><ErrorCode>CampaignServiceCannotAddChildrenToProductPartitionUnit</ErrorCode><FieldPath>ProductConditions</FieldPath><ForwardCompatibilityMap i:nil="true" xmlns:a="http://schemas.datacontract.org/2004/07/System.Collections.Generic"/><Index>1</Index><Message>You can only add child nodes to a parent of type subdivision.</Message><Type>BatchError</Type></BatchError></PartialErrors></ApplyProductPartitionActionsResponse>`)
+	b := (`<ApplyProductPartitionActionsResponse xmlns="https://bingads.microsoft.com/CampaignManagement/v12"><AdGroupCriterionIds xmlns:a="http://schemas.datacontract.org/2004/07/System" xmlns:i="http://www.w3.org/2001/XMLSchema-instance"><a:long i:nil="true"/><a:long i:nil="true"/></AdGroupCriterionIds><PartialErrors xmlns:i="http://www.w3.org/2001/XMLSchema-instance"><BatchError><Code>4150</Code><Details i:nil="true"/><ErrorCode>CampaignServiceRelatedProductPartitionActionError</ErrorCode><FieldPath i:nil="true"/><ForwardCompatibilityMap i:nil="true" xmlns:a="http://schemas.datacontract.org/2004/07/System.Collections.Generic"/><Index>0</Index><Message>Product partition action for the same ad group has an error.</Message><Type>BatchError</Type></BatchError><BatchError><Code>4133</Code><Details i:nil="true"/><ErrorCode>CampaignServiceCannotAddChildrenToProductPartitionUnit</ErrorCode><FieldPath>ProductConditions</FieldPath><ForwardCompatibilityMap i:nil="true" xmlns:a="http://schemas.datacontract.org/2004/07/System.Collections.Generic"/><Index>1</Index><Message>You can only add child nodes to a parent of type subdivision.</Message><Type>BatchError</Type></BatchError></PartialErrors></ApplyProductPartitionActionsResponse>`)
 
 	s := StringClient(envheader + b + envend)
 
 	svc := &CampaignService{
-		Endpoint: "https://campaign.api.sandbox.bingads.microsoft.com/Api/Advertiser/CampaignManagement/v11/CampaignManagementService.svc",
+		Endpoint: "https://campaign.api.sandbox.bingads.microsoft.com/Api/Advertiser/CampaignManagement/v12/CampaignManagementService.svc",
 		Session:  &Session{HTTPClient: s},
 	}
 
@@ -746,21 +808,10 @@ func TestUnmarshalPartitionResponseError(t *testing.T) {
 	}
 }
 
-func TestBulkFindAdgroupCampaign(t *testing.T) {
-	session := &Session{
-		AccountId:      os.Getenv("BING_ACCOUNT_ID"),
-		CustomerId:     os.Getenv("BING_CUSTOMER_ID"),
-		Username:       os.Getenv("BING_USERNAME"),
-		Password:       os.Getenv("BING_PASSWORD"),
-		DeveloperToken: os.Getenv("BING_DEV_TOKEN"),
-		HTTPClient:     &http.Client{},
-	}
-
-	bulk := &BulkService{
-		Endpoint: "https://bulk.api.sandbox.bingads.microsoft.com/Api/Advertiser/CampaignManagement/V11/BulkService.svc",
-		Session:  session,
-	}
+func TestSandboxBulkFindAdgroupCampaign(t *testing.T) {
 	svc := getTestClient()
+	bulk := NewBulkService(getTestSession())
+	bulk.Endpoint = strings.Replace(bulk.Endpoint, "bingads", "sandbox.bingads", 1)
 
 	camps, _ := svc.GetCampaignsByAccountId(Shopping)
 	var campid int64
