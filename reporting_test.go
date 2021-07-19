@@ -18,10 +18,10 @@ import (
 )
 
 func reportingService() *ReportingService {
-	if os.Getenv("TEST_PROD") != "" {
-		session := getProdClient()
-		return NewReportingService(session)
-	}
+	// if os.Getenv("TEST_PROD") != "" {
+	// 	session := getProdClient()
+	// 	return NewReportingService(session)
+	// }
 
 	config := oauth2.Config{
 		ClientID:     os.Getenv("CLIENT_ID"),

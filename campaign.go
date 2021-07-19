@@ -14,7 +14,7 @@ type Campaign struct {
 	Id            int64         `xml:"Id,omitempty"`
 	Name          string        `xml:"Name"`
 	//maybe parse into sql nullable int?
-	//NativeBidAdjustment int     `xml:"https://bingads.microsoft.com/CampaignManagement/v12 NativeBidAdjustment"`
+	//NativeBidAdjustment int     `xml:"https://bingads.microsoft.com/CampaignManagement/v13 NativeBidAdjustment"`
 	Status       string             `xml:"Status"`
 	TimeZone     string             `xml:"TimeZone"`
 	CampaignType CampaignType       `xml:"CampaignType"`
@@ -94,7 +94,7 @@ type CampaignService struct {
 
 func NewCampaignService(session *Session) *CampaignService {
 	return &CampaignService{
-		Endpoint: "https://campaign.api.bingads.microsoft.com/Api/Advertiser/CampaignManagement/v12/CampaignManagementService.svc",
+		Endpoint: "https://campaign.api.bingads.microsoft.com/Api/Advertiser/CampaignManagement/v13/CampaignManagementService.svc",
 		Session:  session,
 	}
 }
@@ -112,7 +112,7 @@ type GetCampaignsByAccountIdResponse struct {
 
 func (c *CampaignService) GetCampaignsByAccountId(campaignType CampaignType) ([]Campaign, error) {
 	req := GetCampaignsByAccountIdRequest{
-		NS:           "https://bingads.microsoft.com/CampaignManagement/v12",
+		NS:           "https://bingads.microsoft.com/CampaignManagement/v13",
 		CampaignType: campaignType,
 		AccountId:    c.Session.AccountId,
 	}
@@ -131,7 +131,7 @@ func (c *CampaignService) GetCampaignsByAccountId(campaignType CampaignType) ([]
 
 func (c *CampaignService) AddCampaigns(campaigns []Campaign) (*AddCampaignsResponse, error) {
 	req := AddCampaignsRequest{
-		NS:        "https://bingads.microsoft.com/CampaignManagement/v12",
+		NS:        "https://bingads.microsoft.com/CampaignManagement/v13",
 		Campaigns: campaigns,
 		AccountId: c.Session.AccountId,
 	}
@@ -171,7 +171,7 @@ type AddCampaignsResponse struct {
 
 func (c *CampaignService) DeleteCampaigns(campaigns []int64) (*DeleteCampaignsResponse, error) {
 	req := DeleteCampaignsRequest{
-		NS:          "https://bingads.microsoft.com/CampaignManagement/v12",
+		NS:          "https://bingads.microsoft.com/CampaignManagement/v13",
 		CampaignIds: campaigns,
 		AccountId:   c.Session.AccountId,
 	}

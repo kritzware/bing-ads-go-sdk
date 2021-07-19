@@ -75,7 +75,7 @@ type GetAdGroupCriterionsByIdsRequest struct {
 }
 
 type GetAdGroupCriterionsByIdsResponse struct {
-	AdGroupCriterions []BiddableAdGroupCriterion `xml:"https://bingads.microsoft.com/CampaignManagement/v12 AdGroupCriterions>AdGroupCriterion"`
+	AdGroupCriterions []BiddableAdGroupCriterion `xml:"https://bingads.microsoft.com/CampaignManagement/v13 AdGroupCriterions>AdGroupCriterion"`
 }
 
 /*
@@ -159,7 +159,7 @@ func (c *CampaignService) GetAdGroupCriterionsByIds(adgroup int64) ([]BiddableAd
 	req := GetAdGroupCriterionsByIdsRequest{
 		AdGroupId:     adgroup,
 		CriterionType: "ProductPartition",
-		NS:            "https://bingads.microsoft.com/CampaignManagement/v12",
+		NS:            "https://bingads.microsoft.com/CampaignManagement/v13",
 	}
 	resp, err := c.Session.SendRequest(req, c.Endpoint, "GetAdGroupCriterionsByIds")
 
@@ -252,7 +252,7 @@ func (s *Longs) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
 //TODO: should we handle mapping successful ids to actions
 func (c *CampaignService) ApplyProductPartitionActions(actions []AdGroupCriterionAction) (*ApplyProductPartitionActionsResponse, error) {
 	req := ApplyProductPartitionActionsRequest{
-		NS:               "https://bingads.microsoft.com/CampaignManagement/v12",
+		NS:               "https://bingads.microsoft.com/CampaignManagement/v13",
 		CriterionActions: actions,
 	}
 	resp, err := c.Session.SendRequest(req, c.Endpoint, "ApplyProductPartitionActions")

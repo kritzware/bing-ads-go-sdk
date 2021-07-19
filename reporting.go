@@ -12,7 +12,7 @@ type ReportingService struct {
 
 func NewReportingService(session *Session) *ReportingService {
 	return &ReportingService{
-		Endpoint: "https://api.bingads.microsoft.com/Api/Advertiser/Reporting/v12/ReportingService.svc",
+		Endpoint: "https://api.bingads.microsoft.com/Api/Advertiser/Reporting/v13/ReportingService.svc",
 		Session:  session,
 	}
 }
@@ -188,7 +188,7 @@ type ReportRequestStatus struct {
 func (c *ReportingService) PollGenerateReport(id string) (*ReportRequestStatus, error) {
 	req := PollGenerateReportRequest{
 		ReportRequestId: id,
-		NS:              "https://bingads.microsoft.com/Reporting/v12",
+		NS:              "https://bingads.microsoft.com/Reporting/v13",
 	}
 	resp, err := c.Session.reportRequest(req, c.Endpoint, "PollGenerateReport")
 	if err != nil {
@@ -206,7 +206,7 @@ func (c *ReportingService) PollGenerateReport(id string) (*ReportRequestStatus, 
 func (c *ReportingService) SubmitReportRequest(rr interface{}) (string, error) {
 	req := SubmitGenerateReportRequest{
 		ReportRequest: rr,
-		NS:            "https://bingads.microsoft.com/Reporting/v12",
+		NS:            "https://bingads.microsoft.com/Reporting/v13",
 	}
 	resp, err := c.Session.reportRequest(req, c.Endpoint, "SubmitGenerateReport")
 

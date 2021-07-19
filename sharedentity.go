@@ -52,7 +52,7 @@ func (s *NegativeKeywordList) MarshalXML(e *xml.Encoder, start xml.StartElement)
 
 func (c *CampaignService) GetSharedEntitiesByAccountId(entityType string) ([]NegativeKeywordList, error) {
 	req := GetSharedEntitiesByAccountIdRequest{
-		NS:               "https://bingads.microsoft.com/CampaignManagement/v12",
+		NS:               "https://bingads.microsoft.com/CampaignManagement/v13",
 		SharedEntityType: "NegativeKeywordList",
 	}
 	resp, err := c.Session.SendRequest(req, c.Endpoint, "GetSharedEntitiesByAccountId")
@@ -109,7 +109,7 @@ func (s *NegativeKeyword) MarshalXML(e *xml.Encoder, start xml.StartElement) err
 
 func (c *CampaignService) GetListItemsBySharedList(list *NegativeKeywordList) ([]NegativeKeyword, error) {
 	req := GetListItemsBySharedListRequest{
-		NS:         "https://bingads.microsoft.com/CampaignManagement/v12",
+		NS:         "https://bingads.microsoft.com/CampaignManagement/v13",
 		SharedList: list,
 	}
 	resp, err := c.Session.SendRequest(req, c.Endpoint, "GetListItemsBySharedList")
@@ -142,7 +142,7 @@ type AddSharedEntityResponse struct {
 
 func (c *CampaignService) AddSharedEntity(entity *NegativeKeywordList, items []NegativeKeyword) (*AddSharedEntityResponse, error) {
 	req := AddSharedEntityRequest{
-		NS:           "https://bingads.microsoft.com/CampaignManagement/v12",
+		NS:           "https://bingads.microsoft.com/CampaignManagement/v13",
 		SharedEntity: entity,
 		ListItems:    items,
 	}
@@ -183,7 +183,7 @@ type DeleteSharedEntitiesResponse struct {
 
 func (c *CampaignService) DeleteSharedEntities(list []NegativeKeywordList) ([]BatchError, error) {
 	req := DeleteSharedEntitiesRequest{
-		NS:             "https://bingads.microsoft.com/CampaignManagement/v12",
+		NS:             "https://bingads.microsoft.com/CampaignManagement/v13",
 		SharedEntities: list,
 	}
 	res, err := c.Session.SendRequest(req, c.Endpoint, "DeleteSharedEntities")
@@ -216,7 +216,7 @@ type SetSharedEntityAssociationsResponse struct {
 
 func (c *CampaignService) SetSharedEntityAssociations(associations []SharedEntityAssociation) error {
 	req := SetSharedEntityAssociationsRequest{
-		NS:           "https://bingads.microsoft.com/CampaignManagement/v12",
+		NS:           "https://bingads.microsoft.com/CampaignManagement/v13",
 		Associations: associations,
 	}
 	_, err := c.Session.SendRequest(req, c.Endpoint, "SetSharedEntityAssociations")
@@ -252,7 +252,7 @@ type GetSharedEntityAssociationsBySharedEntityIdsResponse struct {
 //gives us an internal service error in sandbox
 func (c *CampaignService) GetSharedEntityAssociationsBySharedEntityIds(ids []int64) (*GetSharedEntityAssociationsBySharedEntityIdsResponse, error) {
 	req := GetSharedEntityAssociationsBySharedEntityIdsRequest{
-		NS:               "https://bingads.microsoft.com/CampaignManagement/v12",
+		NS:               "https://bingads.microsoft.com/CampaignManagement/v13",
 		EntityType:       "Campaign",
 		SharedEntityType: "NegativeKeywordList",
 		SharedEntityIds:  SharedEntityIds(ids),
@@ -293,7 +293,7 @@ type GetSharedEntityAssociationsByEntityIdsResponse struct {
 
 func (c *CampaignService) GetSharedEntityAssociationsByEntityIds(ids []int64) (*GetSharedEntityAssociationsByEntityIdsResponse, error) {
 	req := GetSharedEntityAssociationsByEntityIdsRequest{
-		NS:               "https://bingads.microsoft.com/CampaignManagement/v12",
+		NS:               "https://bingads.microsoft.com/CampaignManagement/v13",
 		EntityType:       "Campaign",
 		SharedEntityType: "NegativeKeywordList",
 		EntityIds:        ids,
@@ -320,7 +320,7 @@ type DeleteSharedEntityAssociationsResponse struct {
 
 func (c *CampaignService) DeleteSharedEntityAssociations(list []SharedEntityAssociation) ([]BatchError, error) {
 	req := DeleteSharedEntityAssociationsRequest{
-		NS:           "https://bingads.microsoft.com/CampaignManagement/v12",
+		NS:           "https://bingads.microsoft.com/CampaignManagement/v13",
 		Associations: list,
 	}
 	res, err := c.Session.SendRequest(req, c.Endpoint, "DeleteSharedEntityAssociations")
@@ -347,7 +347,7 @@ type AddListItemsToSharedListResponse struct {
 
 func (c *CampaignService) AddListItemsToSharedList(list *NegativeKeywordList, items []NegativeKeyword) (*AddListItemsToSharedListResponse, error) {
 	req := AddListItemsToSharedListRequest{
-		NS:         "https://bingads.microsoft.com/CampaignManagement/v12",
+		NS:         "https://bingads.microsoft.com/CampaignManagement/v13",
 		SharedList: list,
 		ListItems:  items,
 	}
@@ -362,7 +362,7 @@ func (c *CampaignService) AddListItemsToSharedList(list *NegativeKeywordList, it
 }
 
 func (s DeleteListItemsFromSharedListRequest) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
-	e.EncodeToken(st("DeleteListItemsFromSharedListRequest", "xmlns", "https://bingads.microsoft.com/CampaignManagement/v12"))
+	e.EncodeToken(st("DeleteListItemsFromSharedListRequest", "xmlns", "https://bingads.microsoft.com/CampaignManagement/v13"))
 	e.EncodeToken(st("ListItemIds", "xmlns:a1", "http://schemas.microsoft.com/2003/10/Serialization/Arrays"))
 
 	for i := 0; i < len(s.ListItemIds); i++ {
@@ -389,7 +389,7 @@ type DeleteListItemsFromSharedListResponse struct {
 
 func (c *CampaignService) DeleteListItemsFromSharedList(list *NegativeKeywordList, items []int64) (*DeleteListItemsFromSharedListResponse, error) {
 	req := DeleteListItemsFromSharedListRequest{
-		NS:          "https://bingads.microsoft.com/CampaignManagement/v12",
+		NS:          "https://bingads.microsoft.com/CampaignManagement/v13",
 		SharedList:  list,
 		ListItemIds: items,
 	}

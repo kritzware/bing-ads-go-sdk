@@ -80,7 +80,7 @@ var CampaignCriterionAlreadyExists = errors.New("CampaignCriterionAlreadyExists"
 
 func (c *CampaignService) AddCampaignCriterions(t string, cs []CampaignCriterion) ([]int64, error) {
 	req := AddCampaignCriterionsRequest{
-		NS:                 "https://bingads.microsoft.com/CampaignManagement/v12",
+		NS:                 "https://bingads.microsoft.com/CampaignManagement/v13",
 		CriterionType:      t,
 		CampaignCriterions: cs,
 	}
@@ -147,7 +147,7 @@ type UpdateCampaignCriterionsResponse struct {
 
 func (c *CampaignService) UpdateCampaignCriterions(t string, cs []CampaignCriterion) error {
 	req := UpdateCampaignCriterionsRequest{
-		NS:                 "https://bingads.microsoft.com/CampaignManagement/v12",
+		NS:                 "https://bingads.microsoft.com/CampaignManagement/v13",
 		CampaignCriterions: cs,
 		CriterionType:      t,
 	}
@@ -171,7 +171,7 @@ func (c *CampaignService) UpdateCampaignCriterions(t string, cs []CampaignCriter
 
 func (c *CampaignService) GetCampaignCriterionsByIds(campaign int64) ([]CampaignCriterion, error) {
 	req := GetCampaignCriterionsByIdsRequest{
-		NS:            "https://bingads.microsoft.com/CampaignManagement/v12",
+		NS:            "https://bingads.microsoft.com/CampaignManagement/v13",
 		CampaignId:    campaign,
 		CriterionType: "ProductScope",
 	}
@@ -195,5 +195,5 @@ type GetCampaignCriterionsByIdsRequest struct {
 }
 
 type GetCampaignCriterionsByIdsResponse struct {
-	CampaignCriterions []CampaignCriterion `xml:"https://bingads.microsoft.com/CampaignManagement/v12 CampaignCriterions>CampaignCriterion"`
+	CampaignCriterions []CampaignCriterion `xml:"https://bingads.microsoft.com/CampaignManagement/v13 CampaignCriterions>CampaignCriterion"`
 }

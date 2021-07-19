@@ -40,12 +40,12 @@ type GetAdGroupsByCampaignIdRequest struct {
 }
 
 type GetAdGroupsByCampaignIdResponse struct {
-	AdGroups []AdGroup `xml:"https://bingads.microsoft.com/CampaignManagement/v12 AdGroups>AdGroup"`
+	AdGroups []AdGroup `xml:"https://bingads.microsoft.com/CampaignManagement/v13 AdGroups>AdGroup"`
 }
 
 func (c *CampaignService) GetAdgroupsByCampaign(campaign int64) ([]AdGroup, error) {
 	req := GetAdGroupsByCampaignIdRequest{
-		NS:         "https://bingads.microsoft.com/CampaignManagement/v12",
+		NS:         "https://bingads.microsoft.com/CampaignManagement/v13",
 		CampaignId: campaign,
 	}
 
@@ -62,7 +62,7 @@ func (c *CampaignService) GetAdgroupsByCampaign(campaign int64) ([]AdGroup, erro
 
 func (c *CampaignService) AddAdGroups(campaign int64, adgroups []AdGroup) (*AddAdGroupsResponse, error) {
 	req := AddAdGroupsRequest{
-		NS:         "https://bingads.microsoft.com/CampaignManagement/v12",
+		NS:         "https://bingads.microsoft.com/CampaignManagement/v13",
 		CampaignId: campaign,
 		AdGroups:   adgroups,
 	}
