@@ -1,4 +1,4 @@
-module github.com/kritzware/bing-ads-go-dsk
+module github.com/kritzware/bing-ads-go-sdk
 
 go 1.16
 
